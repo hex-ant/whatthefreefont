@@ -1,0 +1,8 @@
+public/catalog/
+public/models/
+.cache/
+.output/
+.nuxt/
+node_modules/
+docs/benchmarks/
+pnpm-lock.yaml

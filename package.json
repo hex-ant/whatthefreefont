@@ -1,0 +1,41 @@
+{
+  "name": "whatthefreefont",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.17.1",
+  "scripts": {
+    "dev": "nuxt dev --host 127.0.0.1",
+    "build": "nuxt generate",
+    "preview": "serve .output/public --listen 4173",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "catalog": "tsx scripts/build-catalog.ts",
+    "benchmark": "tsx scripts/benchmark.ts",
+    "format": "prettier --write .",
+    "test:browser": "tsx scripts/browser-check.ts",
+    "test:ocr": "tsx scripts/ocr-check.ts",
+    "test:interactions": "tsx scripts/interactions-check.ts",
+    "test:corpus": "tsx scripts/heldout-check.ts",
+    "test:assets": "tsx scripts/verify-assets.ts"
+  },
+  "dependencies": {
+    "@paddleocr/paddleocr-js": "0.4.2",
+    "nuxt": "4.5.2",
+    "tesseract.js": "7.0.0",
+    "vue": "^3.5.42"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.0.8",
+    "@types/fontkit": "^2.0.9",
+    "fontkit": "^2.0.4",
+    "google-font-metadata": "6.0.8",
+    "playwright": "^1.63.0",
+    "prettier": "3.6.2",
+    "serve": "14.2.6",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0",
+    "vue-tsc": "^3.3.11"
+  }
+}
