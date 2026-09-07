@@ -13,13 +13,6 @@
   font-display: swap;
 }
 @font-face {
-  font-family: 'Brand What';
-  src: url('https://fonts.gstatic.com/l/font?kit=V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj4PVksjLsEKJV48&skey=c04ef52a878abc32&v=v22')
-    format('truetype');
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
   font-family: 'Brand The';
   src: url('https://fonts.gstatic.com/l/font?kit=rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAIpxhTn_wCQp1&skey=cd068b3e1b767e51&v=v17')
     format('truetype');
@@ -116,8 +109,9 @@ button {
   line-height: 1;
 }
 .brand-what {
-  font-family: 'Brand What', 'Space Grotesk', sans-serif;
-  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.065em;
 }
 .brand-the {
   margin-left: 0.065em;
