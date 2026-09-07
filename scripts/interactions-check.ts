@@ -1,7 +1,12 @@
 import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
-import { writeFile } from 'node:fs/promises'
-const browser = await chromium.launch({ channel: 'chrome', headless: true })
+import { mkdir, writeFile } from 'node:fs/promises'
+const reportDir = process.env.REPORT_DIR || 'docs/benchmarks'
+await mkdir(`${reportDir}/screenshots`, { recursive: true })
+const browser = await chromium.launch({
+  channel: process.env.BROWSER === 'chromium' ? undefined : 'chrome',
+  headless: true,
+})
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } }),
   mutations: string[] = [],
   errors: string[] = []
@@ -20,7 +25,7 @@ await page.addInitScript(() => {
     },
   })
 })
-await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' })
+await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/', { waitUntil: 'networkidle' })
 await page.getByRole('button', { name: /Obrót i kolor/ }).click()
 await page.getByRole('button', { name: 'Nowa ramka' }).click()
 const svg = page.locator('.crop-svg'),
@@ -83,11 +88,11 @@ assert(
   await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   'Mobile overflow',
 )
-await page.screenshot({ path: 'docs/benchmarks/screenshots/mobile-editor.png', fullPage: true })
+await page.screenshot({ path: `${reportDir}/screenshots/mobile-editor.png`, fullPage: true })
 assert.deepEqual(mutations, [])
 assert.deepEqual(errors, [])
 await writeFile(
-  'docs/benchmarks/interactions.json',
+  `${reportDir}/interactions.json`,
   JSON.stringify(
     {
       cropDraw: true,

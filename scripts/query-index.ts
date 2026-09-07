@@ -1,5 +1,5 @@
+import { readCatalogAsset } from './catalog-assets'
 import { readFile } from 'node:fs/promises'
-import { gunzipSync } from 'node:zlib'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
 import { fromRGBA, trim, estimateAngle, rotate, segmentGlyphs } from '../app/lib/image'
 import { rankIndex } from '../app/lib/ranking'
@@ -8,10 +8,7 @@ const [path, text, family] = process.argv.slice(2),
   shards = new Map()
 for (const ch of new Set(text!.replace(/\s/g, '')))
   if (c.glyphs.includes(ch))
-    shards.set(
-      ch,
-      gunzipSync(await readFile(`public/catalog/glyphs/${ch.codePointAt(0)!.toString(16)}.bin.gz`)),
-    )
+    shards.set(ch, await readCatalogAsset('public/catalog', c.glyphFiles[ch]))
 const im = await loadImage(path!),
   canvas = createCanvas(im.width, im.height),
   ctx = canvas.getContext('2d')

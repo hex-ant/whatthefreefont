@@ -1,24 +1,27 @@
+import { readCatalogAsset } from './catalog-assets'
 import { readFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
-import { gunzipSync } from 'node:zlib'
 import assert from 'node:assert/strict'
 import type { Catalog, FontCoverage } from '../app/lib/types'
 import { GLYPH_BYTES } from '../app/lib/image'
 
 const catalog: Catalog = JSON.parse(await readFile('public/catalog/catalog.json', 'utf8'))
+assert.equal(catalog.version, 2)
 assert.equal(catalog.failures.length, 0, 'Catalog build has failures')
+const report = JSON.parse(await readFile('public/catalog/build-report.json', 'utf8'))
+assert.equal(report.failures.length, 0, 'Latest catalog generation failed')
+assert.equal(report.families, catalog.families, 'Build report does not match catalog')
+assert.equal(report.variants, catalog.variants.length, 'Build report does not match catalog')
 assert.equal(new Set(catalog.variants.map((v) => v.family)).size, catalog.families)
 assert(
   catalog.variants.every((v, i) => v.id === i && v.url.startsWith('https://fonts.gstatic.com/')),
 )
 for (const char of catalog.glyphs) {
-  const bytes = gunzipSync(
-    await readFile(`public/catalog/glyphs/${char.codePointAt(0)!.toString(16)}.bin.gz`),
-  )
+  const bytes = await readCatalogAsset('public/catalog', catalog.glyphFiles[char]!)
   assert.equal(bytes.length, catalog.variants.length * GLYPH_BYTES, `Invalid index for ${char}`)
 }
 const coverage: FontCoverage = JSON.parse(
-  gunzipSync(await readFile('public/catalog/coverage.json.gz')).toString(),
+  (await readCatalogAsset('public/catalog', catalog.coverageFile)).toString(),
 )
 const hash = createHash('sha256')
   .update(catalog.variants.map((v) => v.url).join('\n'))

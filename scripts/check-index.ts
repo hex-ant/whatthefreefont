@@ -1,5 +1,5 @@
+import { readCatalogAsset } from './catalog-assets'
 import { readFile, writeFile } from 'node:fs/promises'
-import { gunzipSync } from 'node:zlib'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
 import { estimateAngle, fromRGBA, rotate, trim } from '../app/lib/image'
 import { rankIndex, queryGlyphs } from '../app/lib/ranking'
@@ -8,10 +8,7 @@ const catalog: Catalog = JSON.parse(await readFile('public/catalog/catalog.json'
 const shards = new Map<string, Uint8Array>()
 const text = 'Hamburge Fonts'
 for (const char of new Set(text.replace(/\s/g, '')))
-  shards.set(
-    char,
-    gunzipSync(await readFile(`public/catalog/glyphs/${char.codePointAt(0)!.toString(16)}.bin.gz`)),
-  )
+  shards.set(char, await readCatalogAsset('public/catalog', catalog.glyphFiles[char]!))
 const results = []
 for (const family of ['montserrat', 'playfair-display', 'lobster', 'poppins'])
   for (const condition of ['clean', 'colour', 'oblique', 'tracking']) {

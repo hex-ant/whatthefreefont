@@ -1,0 +1,127 @@
+{
+  "tab": {
+    "source": "https://github.com/bombshell-dev/tab/blob/main/package.json",
+    "packages": [
+      "@bomb.sh/tab"
+    ],
+    "note": "License declared in package metadata; standard SPDX terms supplied because upstream has no standalone license notice."
+  },
+  "esbuild": {
+    "source": "https://raw.githubusercontent.com/evanw/esbuild/v0.28.2/LICENSE.md",
+    "packages": [
+      "@esbuild/*"
+    ]
+  },
+  "watcher": {
+    "source": "https://raw.githubusercontent.com/parcel-bundler/watcher/v2.6.0/LICENSE",
+    "packages": [
+      "@parcel/watcher-wasm"
+    ]
+  },
+  "polka": {
+    "source": "https://raw.githubusercontent.com/lukeed/polka/master/license",
+    "packages": [
+      "@polka/url"
+    ]
+  },
+  "rolldown": {
+    "source": "https://raw.githubusercontent.com/rolldown/rolldown/v1.2.7/LICENSE",
+    "packages": [
+      "@rolldown/binding-*"
+    ]
+  },
+  "rollup-inject": {
+    "source": "https://raw.githubusercontent.com/rollup/plugins/master/LICENSE",
+    "packages": [
+      "@rollup/plugin-inject"
+    ]
+  },
+  "rollup": {
+    "source": "https://raw.githubusercontent.com/rollup/rollup/v4.63.1/LICENSE.md",
+    "packages": [
+      "@rollup/rollup-*"
+    ]
+  },
+  "simple-git": {
+    "source": "https://raw.githubusercontent.com/steveukx/git-js/main/LICENSE",
+    "packages": [
+      "simple-git",
+      "@simple-git/args-pathspec",
+      "@simple-git/argv-parser"
+    ]
+  },
+  "is-reference": {
+    "source": "https://github.com/Rich-Harris/is-reference/blob/master/package.json",
+    "packages": [
+      "is-reference"
+    ],
+    "note": "License declared in package metadata; standard SPDX terms supplied because upstream has no standalone license notice."
+  },
+  "onnxruntime": {
+    "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.29.0/LICENSE",
+    "packages": [
+      "onnxruntime-common",
+      "onnxruntime-web"
+    ]
+  },
+  "onnxruntime-worker": {
+    "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.24.3/LICENSE",
+    "packages": []
+  },
+  "sirv": {
+    "source": "https://raw.githubusercontent.com/lukeed/sirv/master/license",
+    "packages": [
+      "sirv"
+    ]
+  },
+  "tr46": {
+    "source": "https://raw.githubusercontent.com/Sebmaster/tr46.js/main/LICENSE.md",
+    "packages": [
+      "tr46"
+    ]
+  },
+  "kv-asset-handler": {
+    "source": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/LICENSE-MIT",
+    "packages": [
+      "@cloudflare/kv-asset-handler"
+    ]
+  },
+  "boolbase": {
+    "source": "https://raw.githubusercontent.com/fb55/boolbase/master/LICENSE",
+    "packages": [
+      "boolbase"
+    ]
+  },
+  "guid-typescript": {
+    "source": "https://github.com/snico-dev/guid-typescript/blob/master/package.json",
+    "packages": [
+      "guid-typescript"
+    ],
+    "note": "License declared in package metadata; standard SPDX terms supplied because upstream has no standalone license notice."
+  },
+  "paddleocr": {
+    "source": "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/LICENSE",
+    "packages": [
+      "@paddleocr/paddleocr-js"
+    ]
+  },
+  "clipper": {
+    "source": "https://www.boost.org/LICENSE_1_0.txt",
+    "packages": [
+      "clipper-lib"
+    ],
+    "additionalSource": "https://raw.githubusercontent.com/andyperlitch/jsbn/master/LICENSE"
+  },
+  "tessdata": {
+    "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata/main/LICENSE",
+    "packages": []
+  },
+  "onnx-third-party-1.24.3": {
+    "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.24.3/ThirdPartyNotices.txt",
+    "packages": []
+  },
+  "onnx-third-party-1.29.0": {
+    "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.29.0/ThirdPartyNotices.txt",
+    "packages": []
+  }
+}

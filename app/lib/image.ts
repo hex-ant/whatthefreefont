@@ -189,18 +189,35 @@ export function rotate(mask: Mask, degrees: number): Mask {
 
 /** Search projection concentration, first globally and then at sub-degree resolution. */
 export function estimateAngle(input: Mask): number {
-  const m = resize(
-    input,
-    Math.min(700, input.width),
-    Math.max(1, input.height * Math.min(1, 700 / input.width)),
+  return measureAngle(input).angle
+}
+
+/** Conservative one-shot deskew, assuming upright text (no 180° orientation detection).
+ * Ratios are heuristic evidence of an aligned text line, not probabilities.
+ */
+export function automaticRotation(input: Mask): number {
+  const result = measureAngle(input)
+  if (
+    result.points < 80 ||
+    Math.abs(result.angle) < 0.6 ||
+    result.improvement < 1.08 ||
+    result.prominence < 1.4
   )
+    return 0
+  // Choose the shortest correction modulo 180°.
+  return Math.round((((((90 - result.angle) % 180) + 180) % 180) - 90) * 10) / 10
+}
+
+function measureAngle(input: Mask) {
+  const scale = Math.min(1, 700 / Math.max(input.width, input.height))
+  const m = resize(input, Math.max(1, input.width * scale), Math.max(1, input.height * scale))
   const points: number[] = []
   const stride = Math.max(1, Math.floor(m.data.reduce((n, v) => n + (v > 128 ? 1 : 0), 0) / 10000))
   let n = 0
   for (let y = 0; y < m.height; y++)
     for (let x = 0; x < m.width; x++)
       if (m.data[y * m.width + x]! > 128 && n++ % stride === 0) points.push(x, y)
-  if (points.length < 30) return 0
+  if (points.length < 30) return { angle: 0, points: 0, improvement: 1, prominence: 1 }
   const size = Math.ceil(Math.hypot(m.width, m.height)) * 2 + 8
   const score = (angle: number) => {
     const hist = new Float32Array(size),
@@ -216,10 +233,13 @@ export function estimateAngle(input: Mask): number {
     }
     return hist.reduce((sum, v) => sum + v * v, 0)
   }
+  const baseline = score(0),
+    scores: number[] = []
   let best = 0,
-    max = score(0)
+    max = baseline
   for (let a = -90; a < 90; a += 3) {
     const v = score(a)
+    scores.push(v)
     if (v > max) {
       best = a
       max = v
@@ -233,7 +253,13 @@ export function estimateAngle(input: Mask): number {
       max = v
     }
   }
-  return Math.round(best * 100) / 100
+  scores.sort((a, b) => a - b)
+  return {
+    angle: Math.round(best * 100) / 100,
+    points: points.length / 2,
+    improvement: max / baseline,
+    prominence: max / scores[Math.floor(scores.length / 2)]!,
+  }
 }
 
 export function projection(mask: Mask): Float32Array {

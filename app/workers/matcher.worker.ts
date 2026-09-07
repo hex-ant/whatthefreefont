@@ -12,6 +12,7 @@ import {
   trim,
 } from '../lib/image'
 import { probabilities, queryGlyphs, rankIndex } from '../lib/ranking'
+import { readCatalogAsset } from '../lib/catalog-assets'
 import { coversText, fontSources } from '../lib/font-sources'
 import type { Catalog, FontCoverage, FontVariant, Mask, MatchResult } from '../lib/types'
 
@@ -95,11 +96,14 @@ async function search(input: {
     throw new Error('Wpisz od 1 do 80 znaków z jednej linii tekstu.')
   if (!catalog) {
     progress('Wczytywanie katalogu', 0, 1)
-    const r = await fetch(`${input.base}catalog/catalog.json`)
+    const r = await fetch(`${input.base}catalog/catalog.json`, {
+      cache: 'no-cache',
+      signal: AbortSignal.timeout(30000),
+    })
     if (!r.ok) throw new Error('Nie udało się pobrać katalogu fontów.')
     catalog = await r.json()
     if (
-      catalog.version !== 1 ||
+      catalog.version !== 2 ||
       catalog.indexWidth !== 16 ||
       catalog.indexHeight !== 24 ||
       !catalog.variants.every((v, i) => v.id === i)
@@ -108,17 +112,8 @@ async function search(input: {
     }
   }
   if (!coverage) {
-    const response = await fetch(`${input.base}catalog/coverage.json.gz`)
-    if (!response.ok) throw new Error('Nie udało się pobrać mapy obsługiwanych znaków.')
-    const bytes = await response.arrayBuffer(),
-      header = new Uint8Array(bytes)
-    const decoded =
-      header[0] === 31 && header[1] === 139
-        ? await new Response(
-            new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')),
-          ).text()
-        : new TextDecoder().decode(bytes)
-    const data = JSON.parse(decoded) as FontCoverage
+    const bytes = await readCatalogAsset(input.base, catalog.coverageFile)
+    const data = JSON.parse(new TextDecoder().decode(bytes)) as FontCoverage
     if (
       data.version !== 1 ||
       data.catalogHash !== catalog.coverageHash ||
@@ -150,23 +145,7 @@ async function search(input: {
   await Promise.all(
     glyphs.map(async (g) => {
       if (!cache.has(g.char)) {
-        const r = await fetch(
-          `${input.base}catalog/glyphs/${g.char.codePointAt(0)!.toString(16)}.bin.gz`,
-        )
-        if (!r.ok) throw new Error(`Nie udało się pobrać indeksu znaku „${g.char}”.`)
-        const bytes = await r.arrayBuffer()
-        // Static servers may transparently decompress gzip; accept either representation.
-        const compressed = new Uint8Array(bytes)
-        cache.set(
-          g.char,
-          compressed[0] === 31 && compressed[1] === 139
-            ? new Uint8Array(
-                await new Response(
-                  new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')),
-                ).arrayBuffer(),
-              )
-            : compressed,
-        )
+        cache.set(g.char, await readCatalogAsset(input.base, catalog.glyphFiles[g.char]!))
         if (cache.get(g.char)!.length !== catalog.variants.length * GLYPH_BYTES) {
           cache.delete(g.char)
           throw new Error(

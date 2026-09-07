@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.17.1",
   "scripts": {
     "dev": "nuxt dev --host 127.0.0.1",
-    "build": "nuxt generate",
+    "build": "pnpm test:assets && pnpm licenses:generate && nuxt generate",
     "preview": "serve .output/public --listen 4173",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
@@ -17,7 +17,10 @@
     "test:ocr": "tsx scripts/ocr-check.ts",
     "test:interactions": "tsx scripts/interactions-check.ts",
     "test:corpus": "tsx scripts/heldout-check.ts",
-    "test:assets": "tsx scripts/verify-assets.ts"
+    "test:assets": "tsx scripts/verify-assets.ts",
+    "licenses:generate": "tsx scripts/build-notices.ts",
+    "test:e2e": "tsx scripts/browser-suite.ts",
+    "test:ocr:dev": "tsx scripts/browser-suite.ts --dev-ocr"
   },
   "dependencies": {
     "@paddleocr/paddleocr-js": "0.4.2",
@@ -37,5 +40,10 @@
     "typescript": "^5.9.3",
     "vitest": "^5.0.0",
     "vue-tsc": "^3.3.11"
+  },
+  "license": "MIT",
+  "version": "0.1.0-alpha.1",
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

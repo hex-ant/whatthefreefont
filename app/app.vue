@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { canvasToMask, cropImage, maskToCanvas } from './lib/browser-image'
-import { estimateAngle, rotate } from './lib/image'
+import { automaticRotation, estimateAngle, samplePalette } from './lib/image'
+import { rotationLayout, remapSelection, normalizedAngle } from './lib/rotation'
+import { resetOCR } from './lib/ocr'
 import type { Catalog, Mask, MatchResult, Progress, Recognition, Rect } from './lib/types'
 
 const base = useRuntimeConfig().app.baseURL
@@ -13,10 +15,32 @@ const rect = ref<Rect>({ x: 0, y: 0, width: 1, height: 1 }),
   detections = ref<Recognition[]>([]),
   text = ref('')
 const manualAngle = ref(0),
-  autoRotate = ref(true),
+  autoApplied = ref(false),
   mode = ref<'auto' | 'dark' | 'light'>('auto'),
   threshold = ref(0),
   thorough = ref(false)
+const background = ref('#fff')
+const angle = computed(() => normalizedAngle(Number(manualAngle.value)))
+const layout = computed(() =>
+  rotationLayout(image.value?.width || 1, image.value?.height || 1, angle.value),
+)
+watch(
+  angle,
+  (next, previous) => {
+    if (!image.value || imageBusy.value) return
+    rect.value = remapSelection(rect.value, image.value.width, image.value.height, previous, next)
+    autoApplied.value = false
+    detections.value = []
+    if (ocrBusy.value) ocrStatus.value = 'Obraz obrócony. Możesz ponownie odczytać zaznaczenie.'
+    resetOCR()
+    ++ocrId
+    ocrBusy.value = false
+  },
+  { flush: 'sync' },
+)
+function selectedCanvas(r = rect.value) {
+  return cropImage(image.value!, r, angle.value, background.value)
+}
 const ocrEngine = ref<'auto' | 'paddle' | 'tesseract'>('auto'),
   ocrBusy = ref(false),
   ocrStatus = ref(''),
@@ -72,7 +96,7 @@ function cancel() {
   progress.value = undefined
 }
 watch(
-  [rect, text, manualAngle, autoRotate, mode, threshold, thorough],
+  [rect, text, manualAngle, mode, threshold, thorough],
   () => {
     revision++
     if (busy.value) cancel()
@@ -91,9 +115,8 @@ watch(
 function updatePreview() {
   if (!image.value) return
   try {
-    const canvas = cropImage(image.value, rect.value)
-    let mask = canvasToMask(canvas, mode.value, threshold.value)
-    if (manualAngle.value) mask = rotate(mask, manualAngle.value)
+    const canvas = selectedCanvas()
+    const mask = canvasToMask(canvas, mode.value, threshold.value)
     normalized.value = maskToCanvas(mask).toDataURL()
   } catch {
     /* a pending replacement can invalidate a crop */
@@ -118,6 +141,7 @@ async function loadFile(file: File) {
 }
 async function loadSource(url: string, name: string, sampleText?: string) {
   const id = ++uploadId
+  resetOCR()
   ++ocrId
   cancel()
   imageBusy.value = true
@@ -149,10 +173,28 @@ async function loadSource(url: string, name: string, sampleText?: string) {
     image.value = processed
     source.value = src
     fileName.value = name
-    rect.value = { x: 0, y: 0, width: processed.width, height: processed.height }
     text.value = sampleText || ''
     manualAngle.value = 0
-    autoRotate.value = true
+    const sample = document.createElement('canvas')
+    sample.width = Math.min(256, processed.width)
+    sample.height = Math.max(1, Math.round((processed.height * sample.width) / processed.width))
+    const sampleContext = sample.getContext('2d')!
+    sampleContext.drawImage(processed, 0, 0, sample.width, sample.height)
+    background.value = samplePalette(
+      sampleContext.getImageData(0, 0, sample.width, sample.height).data,
+      sample.width,
+      sample.height,
+    ).background
+    // Apply once before OCR, while the new image is still being initialized.
+    // Later OCR/search results cannot override a manual correction or reset.
+    const orientation = document.createElement('canvas')
+    const orientationScale = Math.min(1, 1000 / Math.max(processed.width, processed.height))
+    orientation.width = Math.max(1, Math.round(processed.width * orientationScale))
+    orientation.height = Math.max(1, Math.round(processed.height * orientationScale))
+    orientation.getContext('2d')!.drawImage(processed, 0, 0, orientation.width, orientation.height)
+    manualAngle.value = automaticRotation(canvasToMask(orientation))
+    autoApplied.value = angle.value !== 0
+    rect.value = { ...layout.value.bounds }
     mode.value = 'auto'
     threshold.value = 0
     imageBusy.value = false
@@ -190,23 +232,33 @@ function paste(e: ClipboardEvent) {
 function selectDetection(d: Recognition) {
   rect.value = { ...d.box }
   text.value = d.text
-  manualAngle.value = 0
-  autoRotate.value = true
   updatePreview()
 }
 function fullImage() {
-  if (image.value) rect.value = { x: 0, y: 0, width: image.value.width, height: image.value.height }
+  if (image.value) rect.value = { ...layout.value.bounds }
 }
 function straighten() {
   if (!image.value) return
-  const m = canvasToMask(cropImage(image.value, rect.value), mode.value, threshold.value)
-  manualAngle.value = -estimateAngle(m)
-  autoRotate.value = false
+  const m = canvasToMask(selectedCanvas(), mode.value, threshold.value)
+  const previous = angle.value,
+    selection = { ...rect.value }
+  manualAngle.value = normalizedAngle(previous - estimateAngle(m))
+  rect.value = remapSelection(
+    selection,
+    image.value.width,
+    image.value.height,
+    previous,
+    angle.value,
+    true,
+  )
   updatePreview()
 }
+function resetRotation() {
+  manualAngle.value = 0
+  autoApplied.value = false
+}
 function flipImage() {
-  manualAngle.value = manualAngle.value > 0 ? manualAngle.value - 180 : manualAngle.value + 180
-  autoRotate.value = false
+  manualAngle.value = normalizedAngle(angle.value + 180)
 }
 
 async function runOCR(selection: boolean) {
@@ -216,18 +268,11 @@ async function runOCR(selection: boolean) {
   ocrBusy.value = true
   ocrError.value = ''
   try {
-    let canvas = cropImage(
-      image.value,
-      selection ? rect.value : { x: 0, y: 0, width: image.value.width, height: image.value.height },
-    )
-    const scaleX = image.value.width / canvas.width,
-      scaleY = image.value.height / canvas.height
-    if (selection) {
-      let m = canvasToMask(canvas, mode.value, threshold.value)
-      m = rotate(m, manualAngle.value)
-      if (autoRotate.value) m = rotate(m, -estimateAngle(m))
-      canvas = maskToCanvas(m)
-    }
+    const region = selection ? { ...rect.value } : { ...layout.value.bounds }
+    let canvas = selectedCanvas(region)
+    const scaleX = region.width / canvas.width,
+      scaleY = region.height / canvas.height
+    if (selection) canvas = maskToCanvas(canvasToMask(canvas, mode.value, threshold.value))
     const { recognize } = await import('./lib/ocr')
     const found = await recognize(
       canvas,
@@ -242,8 +287,8 @@ async function runOCR(selection: boolean) {
       detections.value = found.map((d) => ({
         ...d,
         box: {
-          x: d.box.x * scaleX,
-          y: d.box.y * scaleY,
+          x: region.x + d.box.x * scaleX,
+          y: region.y + d.box.y * scaleY,
           width: d.box.width * scaleX,
           height: d.box.height * scaleY,
         },
@@ -314,7 +359,7 @@ async function search() {
       error.value = `Nie udało się uruchomić analizy. ${e.message || 'Spróbuj ponownie.'}`
       cancel()
     }
-    const canvas = cropImage(image.value, rect.value),
+    const canvas = selectedCanvas(),
       rgba = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
     worker.postMessage(
       {
@@ -323,8 +368,8 @@ async function search() {
         height: canvas.height,
         text: currentText.value,
         base: new URL(base, location.origin).href,
-        autoRotate: autoRotate.value,
-        manualAngle: manualAngle.value,
+        autoRotate: false,
+        manualAngle: 0,
         mode: mode.value,
         threshold: threshold.value,
         thorough: thorough.value,
@@ -389,7 +434,6 @@ onMounted(async () => {
             text.value = v.text
             if (typeof v.rotation === 'number') {
               manualAngle.value = v.rotation
-              autoRotate.value = false
             }
             return { text: text.value, rotation: manualAngle.value }
           },
@@ -405,6 +449,7 @@ onBeforeUnmount(() => {
   clearTimeout(previewTimer)
   cancel()
   lifecycle.abort()
+  resetOCR()
   ++ocrId
   ++uploadId
 })
@@ -506,8 +551,12 @@ onBeforeUnmount(() => {
               ref="cropEditor"
               v-model="rect"
               :src="source"
-              :width="image.width"
-              :height="image.height"
+              :width="layout.width"
+              :height="layout.height"
+              :image-width="image.width"
+              :image-height="image.height"
+              :angle="angle"
+              :background="background"
               :detections="detections"
               @select="selectDetection"
             />
@@ -516,6 +565,9 @@ onBeforeUnmount(() => {
               ><button class="text-button" @click="cropEditor?.draw()">Nowa ramka</button
               ><button class="text-button" @click="fullImage">Cały obraz</button
               ><button class="text-button" @click="straighten">Wyprostuj ↻</button>
+              <button v-if="angle !== 0" class="text-button" @click="resetRotation">
+                Resetuj obrót
+              </button>
             </div>
             <div class="rotation-control">
               <label for="angle">Obrót</label
@@ -526,7 +578,6 @@ onBeforeUnmount(() => {
                 min="-180"
                 max="180"
                 step=".1"
-                @input="autoRotate = false"
               /><input
                 v-model.number="manualAngle"
                 class="angle-number"
@@ -535,7 +586,6 @@ onBeforeUnmount(() => {
                 max="180"
                 step=".1"
                 aria-label="Obrót w stopniach"
-                @input="autoRotate = false"
               /><span>°</span
               ><button
                 class="text-button"
@@ -545,6 +595,9 @@ onBeforeUnmount(() => {
                 180°
               </button>
             </div>
+            <p v-if="autoApplied" class="rotation-note" role="status">
+              Obraz wyprostowany automatycznie. Możesz poprawić obrót lub go zresetować.
+            </p>
             <div v-if="detections.length > 1" class="detected-lines">
               <span>Wykryte napisy:</span
               ><button v-for="(d, i) in detections" :key="i" @click="selectDetection(d)">
@@ -605,8 +658,6 @@ onBeforeUnmount(() => {
               <summary>Ustawienia dopasowania <span>+</span></summary>
               <div class="advanced-fields">
                 <label
-                  ><input v-model="autoRotate" type="checkbox" /> Automatycznie wykryj obrót</label
-                ><label
                   ><input v-model="thorough" type="checkbox" /> Dokładniejsze szukanie (więcej
                   fontów)</label
                 ><label for="polarity"

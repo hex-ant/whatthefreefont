@@ -1,0 +1,14 @@
+diff --git a/src/createWorker.js b/src/createWorker.js
+index 89b53b89b27f6579155ed2a0ef372fa8c2a8b8e6..be49b3d01db71025b2b2af6b22101b5e9f72fee6 100644
+--- a/src/createWorker.js
++++ b/src/createWorker.js
+@@ -43,7 +43,8 @@ module.exports = async (langs = 'eng', oem = OEM.LSTM_ONLY, _options = {}, confi
+   });
+   const workerError = (event) => { workerResReject(event.message); };
+ 
+-  let worker = spawnWorker(options);
++  // Allow the caller to own and terminate the worker before initialization finishes.
++  let worker = typeof _options.createWorker === 'function' ? _options.createWorker() : spawnWorker(options);
+   worker.onerror = workerError;
+ 
+   workerCounter += 1;

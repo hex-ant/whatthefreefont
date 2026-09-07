@@ -4,6 +4,10 @@ const props = defineProps<{
   src: string
   width: number
   height: number
+  imageWidth: number
+  imageHeight: number
+  angle: number
+  background: string
   modelValue: Rect
   detections: Recognition[]
 }>()
@@ -72,8 +76,8 @@ function move(e: PointerEvent) {
       h = -h
     }
   }
-  x = Math.max(0, x)
-  y = Math.max(0, y)
+  x = Math.max(0, Math.min(props.width - 3, x))
+  y = Math.max(0, Math.min(props.height - 3, y))
   w = Math.min(props.width - x, Math.max(3, w))
   h = Math.min(props.height - y, Math.max(3, h))
   emit('update:modelValue', { x, y, width: w, height: h })
@@ -128,7 +132,21 @@ const corners = computed(() => {
           <rect v-bind="modelValue" fill="black" />
         </mask>
       </defs>
-      <image :href="src" :width="width" :height="height" />
+      <rect :width="width" :height="height" :fill="background" />
+      <g
+        :transform="`translate(${width / 2} ${height / 2}) rotate(${angle}) translate(${-imageWidth / 2} ${-imageHeight / 2})`"
+        class="rotated-image"
+      >
+        <image :href="src" :width="imageWidth" :height="imageHeight" />
+        <rect
+          :width="imageWidth"
+          :height="imageHeight"
+          fill="none"
+          stroke="#8b9580"
+          stroke-dasharray="4 4"
+          vector-effect="non-scaling-stroke"
+        />
+      </g>
       <rect :width="width" :height="height" fill="#121a17" opacity=".48" mask="url(#crop-mask)" />
       <rect
         v-for="(d, i) in detections"
@@ -171,7 +189,11 @@ const corners = computed(() => {
     <div class="canvas-caption">
       <span
         ><span class="status-dot" />
-        {{ drawing ? 'Przeciągnij, aby narysować nową ramkę' : 'Zaznacz jedną linię tekstu' }}</span
+        {{
+          drawing
+            ? 'Przeciągnij, aby narysować nową ramkę'
+            : 'Ramka może wychodzić poza krawędzie obrazu'
+        }}</span
       ><span>{{ Math.round(modelValue.width) }} × {{ Math.round(modelValue.height) }} px</span>
     </div>
   </div>

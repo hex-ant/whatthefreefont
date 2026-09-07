@@ -1,28 +1,19 @@
 import type { Recognition } from './types'
+import { OcrSession } from './ocr-session'
 
-let paddle:
-  | Promise<
-      | import('@paddleocr/paddleocr-js').PaddleOCR
-      | Awaited<ReturnType<typeof import('@paddleocr/paddleocr-js').PaddleOCR.create>>
-    >
-  | undefined
-let tesseract: Promise<import('tesseract.js').Worker> | undefined
+type Paddle = Awaited<ReturnType<typeof import('@paddleocr/paddleocr-js').PaddleOCR.create>>
+type Tesseract = import('tesseract.js').Worker
+let paddle: OcrSession<Paddle> | undefined
+let tesseract: OcrSession<Tesseract> | undefined
 let queue: Promise<unknown> = Promise.resolve()
+let generation = 0
 
-function deadline<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('OCR timeout')), ms)
-    promise.then(
-      (value) => {
-        clearTimeout(timer)
-        resolve(value)
-      },
-      (error) => {
-        clearTimeout(timer)
-        reject(error)
-      },
-    )
-  })
+export function resetOCR() {
+  generation++
+  paddle?.close()
+  tesseract?.close()
+  paddle = undefined
+  tesseract = undefined
 }
 
 /** Join neighbouring word boxes from the same horizontal text line. */
@@ -64,118 +55,116 @@ export function groupLines(input: Recognition[]): Recognition[] {
   return result
 }
 
-export async function recognizePaddle(
+async function recognizePaddle(
   canvas: HTMLCanvasElement,
   onStatus: (message: string) => void,
-  assetBase = '/',
-): Promise<Recognition[]> {
-  onStatus(paddle ? 'Wykrywanie napisów…' : 'Pobieranie modelu OCR — tylko przy pierwszym użyciu…')
-  const base = new URL(assetBase, location.origin).href
-  paddle ||= import('@paddleocr/paddleocr-js')
-    .then(({ PaddleOCR }) =>
-      PaddleOCR.create({
-        lang: 'pl',
-        ocrVersion: 'PP-OCRv6',
-        worker: true,
-        textDetectionModelName: 'PP-OCRv6_small_det',
-        textRecognitionModelName: 'PP-OCRv6_small_rec',
-        textDetectionModelAsset: { url: `${base}models/PP-OCRv6_small_det.tar` },
-        textRecognitionModelAsset: { url: `${base}models/PP-OCRv6_small_rec.tar` },
-        ortOptions: {
-          backend: 'wasm',
-          numThreads: 1,
-          wasmPaths: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.3/dist/',
-        },
-      }),
-    )
-    .catch((e) => {
-      paddle = undefined
-      throw e
-    })
-  const engine = await deadline(paddle, 90000)
-  onStatus('Wykrywanie i odczytywanie napisów…')
-  const [result] = await engine.predict(canvas, {
-    textDetLimitSideLen: 1280,
-    textRecScoreThresh: 0.15,
-  })
-  return groupLines(
-    (result?.items || []).map((item) => {
-      const xs = item.poly.map((p) => p[0]),
-        ys = item.poly.map((p) => p[1])
-      const x = Math.max(0, Math.min(...xs) - 4),
-        y = Math.max(0, Math.min(...ys) - 4)
-      const angle =
-        (Math.atan2(item.poly[1]![1] - item.poly[0]![1], item.poly[1]![0] - item.poly[0]![0]) *
-          180) /
-        Math.PI
-      return {
-        text: item.text,
-        confidence: item.score,
-        angle,
-        box: {
-          x,
-          y,
-          width: Math.min(canvas.width - x, Math.max(...xs) - x + 4),
-          height: Math.min(canvas.height - y, Math.max(...ys) - y + 4),
-        },
-      }
-    }),
-  )
-}
-
-export async function recognizeTesseract(
-  canvas: HTMLCanvasElement,
-  onStatus: (message: string) => void,
-): Promise<Recognition[]> {
-  onStatus(tesseract ? 'Odczytywanie tekstu…' : 'Pobieranie alternatywnego modelu OCR…')
-  tesseract ||= import('tesseract.js')
-    .then(({ createWorker }) =>
-      createWorker(['eng', 'pol'], 1, {
-        workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/worker.min.js',
-        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0',
-        langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-        logger: (m) => {
-          if (m.status === 'recognizing text')
-            onStatus(`Odczytywanie tekstu… ${Math.round(m.progress * 100)}%`)
-        },
-      }),
-    )
-    .catch((e) => {
-      tesseract = undefined
-      throw e
-    })
-  const engine = await tesseract
-  const { data } = await engine.recognize(canvas, {}, { text: true, blocks: true })
-  const lines = data.blocks?.flatMap((b) => b.paragraphs.flatMap((p) => p.lines)) || []
-  return lines
-    .map((l) => ({
-      text: l.text.trim(),
-      confidence: l.confidence / 100,
-      box: {
-        x: l.bbox.x0,
-        y: l.bbox.y0,
-        width: l.bbox.x1 - l.bbox.x0,
-        height: l.bbox.y1 - l.bbox.y0,
-      },
-    }))
-    .filter((l) => l.text)
-}
-
-async function recognizeNow(
-  canvas: HTMLCanvasElement,
-  onStatus: (message: string) => void,
-  engine: 'auto' | 'paddle' | 'tesseract' = 'auto',
-  assetBase = '/',
+  assetBase: string,
 ) {
-  if (engine === 'tesseract') return recognizeTesseract(canvas, onStatus)
+  onStatus(paddle ? 'Wykrywanie napisów…' : 'Pobieranie modelu OCR — tylko przy pierwszym użyciu…')
+  paddle ||= new OcrSession(async (own) => {
+    const [{ PaddleOCR }, { createPaddleWorker }] = await Promise.all([
+      import('@paddleocr/paddleocr-js'),
+      import('./paddle-worker'),
+    ])
+    const base = new URL(assetBase, location.origin).href
+    return PaddleOCR.create({
+      lang: 'pl',
+      ocrVersion: 'PP-OCRv6',
+      worker: { createWorker: () => own(createPaddleWorker()) },
+      textDetectionModelName: 'PP-OCRv6_small_det',
+      textRecognitionModelName: 'PP-OCRv6_small_rec',
+      textDetectionModelAsset: { url: `${base}models/PP-OCRv6_small_det.tar` },
+      textRecognitionModelAsset: { url: `${base}models/PP-OCRv6_small_rec.tar` },
+      // This SDK's prebundled worker embeds ORT 1.24.3, independently of the npm dependency.
+      ortOptions: {
+        backend: 'wasm',
+        numThreads: 1,
+        wasmPaths: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.3/dist/',
+      },
+    })
+  })
+  const session = paddle
   try {
-    const found = await recognizePaddle(canvas, onStatus, assetBase)
-    if (found.length || engine === 'paddle') return found
-  } catch (e) {
-    if (engine === 'paddle') throw e
-    console.warn('PaddleOCR unavailable, trying Tesseract:', e)
+    return await session.run(async (engine) => {
+      onStatus('Wykrywanie i odczytywanie napisów…')
+      const [result] = await engine.predict(canvas, {
+        textDetLimitSideLen: 1280,
+        textRecScoreThresh: 0.15,
+      })
+      return groupLines(
+        (result?.items || []).map((item) => {
+          const xs = item.poly.map((p) => p[0]),
+            ys = item.poly.map((p) => p[1])
+          const x = Math.max(0, Math.min(...xs) - 4),
+            y = Math.max(0, Math.min(...ys) - 4)
+          return {
+            text: item.text,
+            confidence: item.score,
+            angle:
+              (Math.atan2(
+                item.poly[1]![1] - item.poly[0]![1],
+                item.poly[1]![0] - item.poly[0]![0],
+              ) *
+                180) /
+              Math.PI,
+            box: {
+              x,
+              y,
+              width: Math.min(canvas.width - x, Math.max(...xs) - x + 4),
+              height: Math.min(canvas.height - y, Math.max(...ys) - y + 4),
+            },
+          }
+        }),
+      )
+    }, onStatus)
+  } catch (error) {
+    if (paddle === session) paddle = undefined
+    throw error
   }
-  return recognizeTesseract(canvas, onStatus)
+}
+
+async function recognizeTesseract(canvas: HTMLCanvasElement, onStatus: (message: string) => void) {
+  onStatus(tesseract ? 'Odczytywanie tekstu…' : 'Pobieranie alternatywnego modelu OCR…')
+  tesseract ||= new OcrSession(async (own, status) => {
+    const [{ createWorker }, { createTesseractWorker }] = await Promise.all([
+      import('tesseract.js'),
+      import('./ocr-workers'),
+    ])
+    // The committed pnpm patch exposes ownership before createWorker finishes initialization.
+    const options = {
+      createWorker: () => own(createTesseractWorker()),
+      workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/worker.min.js',
+      corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0',
+      langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+      logger: (m: { status: string; progress: number }) => {
+        if (m.status === 'recognizing text')
+          status(`Odczytywanie tekstu… ${Math.round(m.progress * 100)}%`)
+      },
+    }
+    return createWorker(['eng', 'pol'], 1, options)
+  })
+  const session = tesseract
+  try {
+    return await session.run(async (engine) => {
+      const { data } = await engine.recognize(canvas, {}, { text: true, blocks: true })
+      const lines = data.blocks?.flatMap((b) => b.paragraphs.flatMap((p) => p.lines)) || []
+      return lines
+        .map((l) => ({
+          text: l.text.trim(),
+          confidence: l.confidence / 100,
+          box: {
+            x: l.bbox.x0,
+            y: l.bbox.y0,
+            width: l.bbox.x1 - l.bbox.x0,
+            height: l.bbox.y1 - l.bbox.y0,
+          },
+        }))
+        .filter((l) => l.text)
+    }, onStatus)
+  } catch (error) {
+    if (tesseract === session) tesseract = undefined
+    throw error
+  }
 }
 
 export function recognize(
@@ -184,9 +173,22 @@ export function recognize(
   engine: 'auto' | 'paddle' | 'tesseract' = 'auto',
   assetBase = '/',
 ) {
+  const requestedGeneration = generation
   const job = queue
     .catch(() => {})
-    .then(() => deadline(recognizeNow(canvas, onStatus, engine, assetBase), 120000))
+    .then(async () => {
+      if (requestedGeneration !== generation) throw new Error('OCR cancelled')
+      if (engine === 'tesseract') return recognizeTesseract(canvas, onStatus)
+      try {
+        const found = await recognizePaddle(canvas, onStatus, assetBase)
+        if (found.length || engine === 'paddle') return found
+      } catch (error) {
+        if (engine === 'paddle' || requestedGeneration !== generation) throw error
+        console.warn('PaddleOCR unavailable, trying Tesseract:', error)
+      }
+      if (requestedGeneration !== generation) throw new Error('OCR cancelled')
+      return recognizeTesseract(canvas, onStatus)
+    })
   queue = job.catch(() => {})
   return job
 }

@@ -6,10 +6,10 @@ przeglądarce. Build zawiera wyłącznie pliki statyczne.
 
 ## Uruchomienie
 
-Wymagane: Node.js 22+ i pnpm.
+Wymagane: Node.js 22.12+ (CI używa Node.js 24) i pnpm w wersji z `packageManager`.
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
@@ -22,6 +22,8 @@ pnpm preview
 
 Na dowolny hosting statyczny/CDN wgraj **wyłącznie `.output/public`**. Nie potrzeba
 Node.js na hostingu, konta, kluczy, API, funkcji serwerowych ani bazy danych.
+`pnpm build` sprawdza integralność katalogu i modeli oraz generuje informacje
+o licencjach w `licenses/` przed wygenerowaniem strony.
 `nuxt generate` wykonuje pracę serwera jedynie podczas budowania projektu.
 
 Dla hostingu w podkatalogu ustaw `NUXT_APP_BASE_URL=/nazwa/` podczas budowania.
@@ -43,12 +45,25 @@ Wymagane jest HTTP(S), nie otwieranie pliku `index.html` przez `file://`.
 - Postęp i częściowe wyniki, zatrzymanie analizy, obsługa błędów pobierania;
   zmiana parametrów unieważnia poprzednie wyniki.
 
+Obrót działa na całym obrazie przed wycinaniem. Podgląd obejmuje wszystkie narożniki
+oraz dodatkowy margines, w który można rozciągnąć ramkę. OCR i dopasowanie pobierają
+ten sam wycinek obróconego obrazu; obrót nie jest nakładany drugi raz na wycinek.
+Przestrzeń poza obrazem jest dopełniana oszacowanym kolorem jego tła. Przycisk
+„Wyprostuj” obraca widoczny obraz i rozszerza zaznaczenie, aby zachować jego zawartość.
+Po wczytaniu obraz jest automatycznie prostowany przed OCR, jeśli estymator wykryje
+wyraźny kierunek tekstu i poprawę koncentracji linii. Zakładamy, że tekst nie jest do
+góry nogami; automatyczne prostowanie nie rozstrzyga orientacji 180°. Niejednoznaczne
+obrazy pozostają bez zmian. Każdy niezerowy obrót pokazuje przycisk „Resetuj obrót”.
+Reset i ręczna korekta są zachowywane — OCR ani wyszukiwanie nie prostują obrazu ponownie.
+Ręczna zmiana kąta utrzymuje środek ramki na tym samym fragmencie obrazu, o ile pozwala
+na to dostępna przestrzeń. „Cały obraz” obejmuje granice obróconego obrazu.
+
 ## Architektura
 
 ```text
-obraz → ramka → OCR / potwierdzony tekst
+obraz → obrót całego podglądu → ramka → OCR / potwierdzony tekst
                 ↓
-       maska koloru + korekta kąta
+       maska koloru wybranego wycinka
                 ↓
        statyczne indeksy użytych znaków
                 ↓
@@ -67,7 +82,7 @@ plików Google `fonts.gstatic.com`. Aplikacja nie odpytuje Google Fonts API,
 Fontsource API ani Hugging Face Inference API.
 
 **Indeks:** 137 znaków (ASCII, polskie znaki i często używane znaki rozszerzonego
-alfabetu łacińskiego), osobny plik `.bin.gz` na znak. Każdy rekord zawiera siatkę
+alfabetu łacińskiego), osobny plik `<kod-znaku>.<sha256>.bin.gz` na znak. Każdy rekord zawiera siatkę
 16 × 24, proporcje glifu i wysokość. Pobierane są tylko indeksy potrzebne dla
 napisu, maksymalnie 14 różnych znaków. Wszystkie odmiany są oceniane w indeksie;
 do droższego renderowania trafia lista kandydatów. Dla tekstów poza indeksem
@@ -160,8 +175,9 @@ CATALOG_REPAIR=1004,1005 pnpm catalog
 ```
 
 Po aktualizacji wersji `google-font-metadata` wykonaj **pełną** przebudowę.
-Nie mieszaj manifestu i indeksów z różnych generacji. Wgraj kompletny katalog
-atomowo lub do nowego prefiksu wersji CDN. `public/catalog/build-report.json`
+Manifest wskazuje pliki z hashami zawartości. Generator zapisuje nowe pliki
+przed atomowym zastąpieniem lokalnego manifestu; na hostingu stosuj kolejność
+opisaną w sekcji o cache poniżej. `public/catalog/build-report.json`
 musi mieć pustą listę błędów. Testowe `CATALOG_LIMIT` służy wyłącznie do małych
 lokalnych PoC i zastępuje katalog — nie używaj go w buildzie produkcyjnym.
 
@@ -173,6 +189,66 @@ lokalnych PoC i zastępuje katalog — nie używaj go w buildzie produkcyjnym.
 - `app/lib/ocr.ts` — detekcja, OCR i grupowanie słów w linie.
 - `app/components/CropEditor.vue` — edytor ramki z obsługą klawiatury i dotyku.
 - `scripts/build-catalog.ts` — odtwarzalna budowa zasobów statycznych.
+
+## Licencja i status projektu
+
+Kod projektu: **MIT**, patrz [LICENSE](LICENSE). Zależności i zasoby zachowują
+swoje licencje; patrz [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+`pnpm licenses:generate` odtwarza pełne informacje dołączane do statycznego builda.
+
+Wersja alpha. Katalog pozostaje snapshotem 1908 rodzin, a nie gwarancją zgodności
+z całym aktualnym Google Fonts. Rozszerzenie kompletności katalogu jest osobnym zadaniem.
+
+## Cache i publikacja zasobów
+
+Manifest `catalog/catalog.json` ma stały adres i format `version: 2` (wersja formatu,
+nie prefiks całej generacji). Zawiera adres i SHA-256 każdego indeksu litery oraz
+mapy pokrycia Unicode. Hash dotyczy danych **po rozpakowaniu gzip**; działa również,
+gdy CDN rozpakowuje odpowiedź. Przeglądarka i `test:assets` sprawdzają sumy kontrolne.
+
+- `catalog/catalog.json`: `Cache-Control: no-cache` i rewalidacja ETag.
+  Wyłącz długi edge TTL dla manifestu; samo `fetch(..., { cache: 'no-cache' })`
+  nie zastępuje prawidłowej konfiguracji CDN.
+- `catalog/glyphs/*.<sha256>.bin.gz` i `catalog/coverage.<sha256>.json.gz`:
+  `Cache-Control: public, max-age=31536000, immutable`.
+- Wygenerowane pliki `_nuxt/` z hashami: również długi cache immutable.
+- HTML: rewalidacja. Pozostałych plików o stałych nazwach nie oznaczaj immutable.
+
+Na CDN publikuj najpierw nowe pliki danych, potem manifest. Zachowuj stare pliki
+z hashami dla otwartych sesji i rollbacków; generator ich nie usuwa. Hosting, który
+zastępuje całą zawartość katalogu przy deployu (np. Pages), musi otrzymać również
+te starsze pliki. Usuwaj je świadomie według przyjętego okresu retencji.
+Nie cache'uj odpowiedzi 404 dla nowych indeksów.
+
+Identyczne dane zachowują adres. Dodanie fontów może zmienić wszystkie indeksy
+liter — jest to zaakceptowany koszt. Nadal jest jeden plik na znak, bez grup fontów.
+Przeglądarka pobiera tylko indeksy znaków użytych w wyszukiwaniu.
+
+## CI i testy przeglądarkowe
+
+GitHub Actions (`.github/workflows/ci.yml`) sprawdza pull requesty i zmiany na `main`:
+instalację z lockfile, testy, typy, integralność zasobów, generowanie licencji,
+statyczny build oraz dopasowanie i oba silniki OCR w Chromium i WebKit.
+Chromium sprawdza dodatkowo edytor, anulowanie oraz zachowanie ręcznej korekty.
+`pnpm test:ocr:dev` dodatkowo sprawdza oba silniki OCR na serwerze Nuxt dev,
+aby wykrywać różnice względem builda statycznego. Workflow nie publikuje aplikacji. Akcje mają pełne SHA z komentarzami wersji;
+Dependabot proponuje ich aktualizacje.
+
+Odtworzenie automatycznego testu bez ręcznego uruchamiania serwera:
+
+```sh
+pnpm exec playwright install chromium webkit
+pnpm build
+BROWSER=chromium REPORT_DIR=.cache/browser-reports pnpm test:e2e
+BROWSER=webkit REPORT_DIR=.cache/browser-reports pnpm test:e2e
+```
+
+Każdy silnik OCR ma limit 120 sekund obejmujący inicjalizację i rozpoznawanie.
+Po błędzie lub przekroczeniu limitu jego worker jest zatrzymywany, a kolejna próba
+uruchamia nowy. Tryb automatyczny może następnie użyć Tesseract z osobnym limitem.
+Zmiana obrazu anuluje poprzednią kolejkę. W repozytorium jest mały patch Tesseract,
+który umożliwia zatrzymanie workera także podczas inicjalizacji; pnpm nakłada go
+automatycznie. Nie usuwaj patcha bez sprawdzenia testów OCR.
 
 Google Fonts: https://github.com/google/fonts
 PaddleOCR: https://github.com/PaddlePaddle/PaddleOCR

@@ -1,12 +1,12 @@
+import { readCatalogAsset } from './catalog-assets'
 import { chromium } from 'playwright'
 import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises'
-import { gunzipSync } from 'node:zlib'
 import assert from 'node:assert/strict'
 import { coversText } from '../app/lib/font-sources'
 import type { Catalog, FontCoverage } from '../app/lib/types'
 const catalog: Catalog = JSON.parse(await readFile('public/catalog/catalog.json', 'utf8'))
 const coverage: FontCoverage = JSON.parse(
-  gunzipSync(await readFile('public/catalog/coverage.json.gz')).toString(),
+  (await readCatalogAsset('public/catalog', catalog.coverageFile)).toString(),
 )
 const asset = (await readdir('.output/public/_nuxt')).find(
   (f) => f.startsWith('matcher.worker-') && f.endsWith('.js'),

@@ -5,6 +5,7 @@ import {
   trim,
   rotate,
   estimateAngle,
+  automaticRotation,
   elasticDistance,
   pixelDistance,
   segmentGlyphs,
@@ -67,6 +68,20 @@ describe('image normalization', () => {
       const expected = a > 90 ? a - 180 : a
       expect(Math.abs(estimate - expected)).toBeLessThan(1)
     }
+  })
+  it.each([-74, -23, 17, 66])('automatically straightens upright text tilted by %s°', (angle) => {
+    expect(automaticRotation(rotate(sample(), angle))).toBeCloseTo(-angle, 0)
+  })
+  it('leaves straight text, blank images and ambiguous noise alone', () => {
+    expect(automaticRotation(sample())).toBe(0)
+    expect(automaticRotation(rotate(sample(), 180))).toBe(0)
+    expect(automaticRotation({ width: 100, height: 100, data: new Uint8Array(10000) })).toBe(0)
+    let seed = 42
+    const data = Uint8Array.from({ length: 10000 }, () => {
+      seed = (1664525 * seed + 1013904223) >>> 0
+      return seed % 3 === 0 ? 255 : 0
+    })
+    expect(automaticRotation({ width: 100, height: 100, data })).toBe(0)
   })
   it('makes local spacing changes less significant than pixel matching', () => {
     const a = sample(),

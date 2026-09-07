@@ -17,6 +17,7 @@ import {
 } from '../app/lib/image'
 import type { Mask, FontVariant, Catalog } from '../app/lib/types'
 
+await mkdir('.cache/fonts', { recursive: true })
 await mkdir('public/examples', { recursive: true })
 await mkdir('docs/benchmarks', { recursive: true })
 const families = [

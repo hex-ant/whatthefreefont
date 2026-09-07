@@ -1,12 +1,17 @@
 import { chromium, webkit } from 'playwright'
 import { mkdir, writeFile } from 'node:fs/promises'
 import assert from 'node:assert/strict'
-await mkdir('docs/benchmarks/screenshots', { recursive: true })
+
+const reportDir = process.env.REPORT_DIR || 'docs/benchmarks'
+await mkdir(`${reportDir}/screenshots`, { recursive: true })
 const browserName = process.env.BROWSER || 'chrome'
 const browser =
   browserName === 'webkit'
     ? await webkit.launch({ headless: true })
-    : await chromium.launch({ channel: 'chrome', headless: true })
+    : await chromium.launch({
+        channel: process.env.BROWSER === 'chromium' ? undefined : 'chrome',
+        headless: true,
+      })
 const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } })
 const page = await context.newPage(),
   errors: string[] = [],
@@ -28,7 +33,7 @@ page.on('request', (r) => {
 })
 await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/', { waitUntil: 'networkidle' })
 await page.screenshot({
-  path: `docs/benchmarks/screenshots/${browserName}-desktop-empty.png`,
+  path: `${reportDir}/screenshots/${browserName}-desktop-empty.png`,
   fullPage: true,
 })
 const results = []
@@ -59,7 +64,7 @@ for (const [label, expected] of [
   results.push({ label, expected, names, percentages, seconds: duration })
   console.log('RESULT', JSON.stringify(results.at(-1)))
   await page.screenshot({
-    path: `docs/benchmarks/screenshots/${browserName}-${expected!.replaceAll(' ', '-')}.png`,
+    path: `${reportDir}/screenshots/${browserName}-${expected!.replaceAll(' ', '-')}.png`,
     fullPage: true,
   })
   assert(names.includes(expected!), `Missing ${expected}`)
@@ -67,7 +72,7 @@ for (const [label, expected] of [
 }
 await page.setViewportSize({ width: 390, height: 844 })
 await page.screenshot({
-  path: `docs/benchmarks/screenshots/${browserName}-mobile.png`,
+  path: `${reportDir}/screenshots/${browserName}-mobile.png`,
   fullPage: true,
 })
 assert(
@@ -75,7 +80,7 @@ assert(
   'Horizontal mobile overflow',
 )
 await writeFile(
-  `docs/benchmarks/browser-${browserName}.json`,
+  `${reportDir}/browser-${browserName}.json`,
   JSON.stringify({ browser: browserName, results, errors, failures, mutations }, null, 2),
 )
 assert.equal(errors.length, 0, 'Browser runtime errors')

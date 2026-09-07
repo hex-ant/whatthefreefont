@@ -21,6 +21,10 @@ export interface FontVariant {
   latinExt?: string
   subsets: string[]
 }
+export interface CatalogAsset {
+  path: string
+  sha256: string
+}
 export interface Catalog {
   version: number
   generated: string
@@ -32,6 +36,8 @@ export interface Catalog {
   indexWidth: number
   indexHeight: number
   coverageHash?: string
+  glyphFiles: Record<string, CatalogAsset>
+  coverageFile: CatalogAsset
 }
 export interface FontCoverage {
   version: number

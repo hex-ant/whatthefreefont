@@ -1,13 +1,19 @@
 import { chromium, webkit } from 'playwright'
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import assert from 'node:assert/strict'
+const reportDir = process.env.REPORT_DIR || 'docs/benchmarks'
+await mkdir(`${reportDir}/screenshots`, { recursive: true })
 const browserName = process.env.BROWSER || 'chrome'
 const browser =
   browserName === 'webkit'
     ? await webkit.launch({ headless: true })
-    : await chromium.launch({ channel: 'chrome', headless: true })
+    : await chromium.launch({
+        channel: process.env.BROWSER === 'chromium' ? undefined : 'chrome',
+        headless: true,
+      })
 const page = await browser.newPage()
-page.on('pageerror', (e) => console.log('PAGEERROR', e.message))
+const errors: string[] = []
+page.on('pageerror', (e) => errors.push(e.message))
 page.on('console', (m) => {
   if (m.type() === 'error' || m.type() === 'warning') console.log('CONSOLE', m.text().slice(0, 500))
 })
@@ -31,5 +37,6 @@ for (const engine of ['paddle', 'tesseract']) {
   assert(status?.startsWith('Odczytano'), `OCR failed: ${engine}`)
   assert.equal(text, 'Hamburge Fonts')
 }
-await writeFile(`docs/benchmarks/ocr-${browserName}.json`, JSON.stringify(results, null, 2))
+await writeFile(`${reportDir}/ocr-${browserName}.json`, JSON.stringify(results, null, 2))
+assert.deepEqual(errors, [], 'OCR browser runtime errors')
 await browser.close()

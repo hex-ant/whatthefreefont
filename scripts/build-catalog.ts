@@ -3,7 +3,7 @@ import { createCanvas, GlobalFonts } from '@napi-rs/canvas'
 import { create as parseFont } from 'fontkit'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
-import { gzipSync, gunzipSync } from 'node:zlib'
+import { readCatalogAsset, writeCatalogAsset, publishCatalog } from './catalog-assets'
 import { descriptor, GLYPH_BYTES } from '../app/lib/image'
 import type { Catalog, FontVariant } from '../app/lib/types'
 import { buildCoverage } from './build-coverage'
@@ -72,16 +72,6 @@ chosen.forEach((v, i) => (v.id = i))
 const chars = [...new Set(glyphs)]
 const buffers = new Map(chars.map((char) => [char, new Uint8Array(chosen.length * GLYPH_BYTES)]))
 const repairIds = process.env.CATALOG_REPAIR?.split(',').map(Number)
-if (repairIds)
-  for (const char of chars)
-    buffers.set(
-      char,
-      new Uint8Array(
-        gunzipSync(
-          await readFile(`public/catalog/glyphs/${char.codePointAt(0)!.toString(16)}.bin.gz`),
-        ),
-      ),
-    )
 const jobs = repairIds ? chosen.filter((v) => repairIds.includes(v.id)) : chosen
 const failures: string[] = []
 if (repairIds) {
@@ -92,6 +82,11 @@ if (repairIds) {
   )
     throw new Error('Repair requires the original metadata version. Run a full rebuild.')
   failures.push(...previous.failures.filter((f) => !repairIds.includes(Number(f.split(' ')[0]))))
+  for (const char of chars)
+    buffers.set(
+      char,
+      new Uint8Array(await readCatalogAsset('public/catalog', previous.glyphFiles[char]!)),
+    )
 }
 let next = 0,
   done = 0
@@ -157,13 +152,8 @@ await Promise.all(
     }
   }),
 )
-for (const [char, data] of buffers)
-  await writeFile(
-    `public/catalog/glyphs/${char.codePointAt(0)!.toString(16)}.bin.gz`,
-    gzipSync(data, { level: 9 }),
-  )
 const catalog: Catalog = {
-  version: 1,
+  version: 2,
   generated: new Date().toISOString(),
   source: 'google-font-metadata@6.0.8 / Google Fonts static TTF files',
   families: new Set(chosen.map((v) => v.family)).size,
@@ -172,8 +162,9 @@ const catalog: Catalog = {
   failures,
   indexWidth: 16,
   indexHeight: 24,
+  glyphFiles: {},
+  coverageFile: { path: '', sha256: '' },
 }
-await writeFile('public/catalog/catalog.json', JSON.stringify(catalog))
 await writeFile(
   'public/catalog/build-report.json',
   JSON.stringify(
@@ -192,4 +183,14 @@ console.log(
   `Complete: ${catalog.families} families, ${chosen.length} variants, ${chars.length} glyph shards, ${failures.length} errors.`,
 )
 if (failures.length) process.exitCode = 1
-else await buildCoverage(catalog)
+else {
+  for (const [char, data] of buffers)
+    catalog.glyphFiles[char] = await writeCatalogAsset(
+      'public/catalog',
+      `glyphs/${char.codePointAt(0)!.toString(16)}`,
+      'bin',
+      data,
+    )
+  await buildCoverage(catalog)
+  await publishCatalog(catalog)
+}
