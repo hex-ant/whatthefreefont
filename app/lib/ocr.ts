@@ -60,7 +60,7 @@ async function recognizePaddle(
   onStatus: (message: string) => void,
   assetBase: string,
 ) {
-  onStatus(paddle ? 'Wykrywanie napisów…' : 'Pobieranie modelu OCR — tylko przy pierwszym użyciu…')
+  onStatus(paddle ? 'Detecting text…' : 'Downloading the OCR model — first use only…')
   paddle ||= new OcrSession(async (own) => {
     const [{ PaddleOCR }, { createPaddleWorker }] = await Promise.all([
       import('@paddleocr/paddleocr-js'),
@@ -86,7 +86,7 @@ async function recognizePaddle(
   const session = paddle
   try {
     return await session.run(async (engine) => {
-      onStatus('Wykrywanie i odczytywanie napisów…')
+      onStatus('Detecting and reading text…')
       const [result] = await engine.predict(canvas, {
         textDetLimitSideLen: 1280,
         textRecScoreThresh: 0.15,
@@ -124,7 +124,7 @@ async function recognizePaddle(
 }
 
 async function recognizeTesseract(canvas: HTMLCanvasElement, onStatus: (message: string) => void) {
-  onStatus(tesseract ? 'Odczytywanie tekstu…' : 'Pobieranie alternatywnego modelu OCR…')
+  onStatus(tesseract ? 'Reading text…' : 'Downloading the alternative OCR model…')
   tesseract ||= new OcrSession(async (own, status) => {
     const [{ createWorker }, { createTesseractWorker }] = await Promise.all([
       import('tesseract.js'),
@@ -138,7 +138,7 @@ async function recognizeTesseract(canvas: HTMLCanvasElement, onStatus: (message:
       langPath: 'https://tessdata.projectnaptha.com/4.0.0',
       logger: (m: { status: string; progress: number }) => {
         if (m.status === 'recognizing text')
-          status(`Odczytywanie tekstu… ${Math.round(m.progress * 100)}%`)
+          status(`Reading text… ${Math.round(m.progress * 100)}%`)
       },
     }
     return createWorker(['eng', 'pol'], 1, options)

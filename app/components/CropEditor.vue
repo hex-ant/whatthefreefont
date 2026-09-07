@@ -120,7 +120,7 @@ const corners = computed(() => {
       :viewBox="`0 0 ${width} ${height}`"
       class="crop-svg"
       :class="{ drawing }"
-      aria-label="Edytor zaznaczenia tekstu. Przeciągnij, aby narysować ramkę."
+      aria-label="Text selection editor. Drag to draw a selection."
       @pointerdown="start($event, 'draw')"
       @pointermove="move"
       @pointerup="endDrag"
@@ -168,7 +168,7 @@ const corners = computed(() => {
         class="selected-box"
         tabindex="0"
         role="button"
-        aria-label="Zaznaczony tekst. Strzałki przesuwają ramkę, Alt i strzałki zmieniają rozmiar, Shift przyspiesza."
+        aria-label="Selected text. Arrow keys move the selection, Alt and arrow keys resize it, and Shift increases the step."
         @pointerdown.stop="start($event, drawing || $event.shiftKey ? 'draw' : 'move')"
         @keydown="key"
       />
@@ -190,9 +190,7 @@ const corners = computed(() => {
       <span
         ><span class="status-dot" />
         {{
-          drawing
-            ? 'Przeciągnij, aby narysować nową ramkę'
-            : 'Ramka może wychodzić poza krawędzie obrazu'
+          drawing ? 'Drag to draw a new selection' : 'The selection can extend beyond the image'
         }}</span
       ><span>{{ Math.round(modelValue.width) }} × {{ Math.round(modelValue.height) }} px</span>
     </div>

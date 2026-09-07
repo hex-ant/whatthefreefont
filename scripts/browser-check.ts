@@ -38,16 +38,16 @@ await page.screenshot({
 })
 const results = []
 for (const [label, expected] of [
-  ['Obrót i kolor', 'Montserrat'],
-  ['Szeryfy i odstępy', 'Playfair Display'],
-  ['Pismo odręczne', 'Lobster'],
+  ['Rotation and color', 'Montserrat'],
+  ['Serifs and spacing', 'Playfair Display'],
+  ['Script lettering', 'Lobster'],
 ]) {
   if (results.length)
     await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/', { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: new RegExp(label!) }).click()
-  await page.getByRole('button', { name: 'Znajdź pasujące fonty' }).waitFor()
+  await page.getByRole('button', { name: 'Find matching fonts' }).waitFor()
   const started = Date.now()
-  await page.getByRole('button', { name: 'Znajdź pasujące fonty' }).click()
+  await page.getByRole('button', { name: 'Find matching fonts' }).click()
   await page.waitForFunction(
     () => !!document.querySelector('.comparison-count') || !!document.querySelector('[role=alert]'),
     {},

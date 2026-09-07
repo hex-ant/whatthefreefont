@@ -144,6 +144,6 @@ it('sends Tesseract progress to the current request when reusing the engine', as
   first.mockClear()
   await recognize(canvas, second, 'tesseract')
   expect(first).not.toHaveBeenCalled()
-  expect(second).toHaveBeenCalledWith('Odczytywanie tekstu… 50%')
+  expect(second).toHaveBeenCalledWith('Reading text… 50%')
   expect(mocks.tesseract).toHaveBeenCalledOnce()
 })

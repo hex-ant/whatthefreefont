@@ -23,7 +23,7 @@ try {
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/')
   await page.locator('input[type=file]').setInputFiles(fixturePath)
-  const angle = page.getByRole('spinbutton', { name: 'Obrót w stopniach' })
+  const angle = page.getByRole('spinbutton', { name: 'Rotation in degrees' })
   await angle.fill('-53')
   const bounds = await page.locator('.crop-svg').evaluate((svg) => {
     const root = svg as unknown as SVGSVGElement
@@ -52,7 +52,7 @@ try {
   )
   await page.screenshot({ path: `${reportDir}/rotated-preview.png`, fullPage: true })
   await angle.fill('-90')
-  await page.getByRole('button', { name: 'Nowa ramka' }).click()
+  await page.getByRole('button', { name: 'New selection' }).click()
   const positions = await page.locator('.crop-svg').evaluate((svg) => {
     const root = svg as unknown as SVGSVGElement,
       box = root.viewBox.baseVal
@@ -72,14 +72,14 @@ try {
     Number(await page.locator('.selected-box').getAttribute('x')) < 12,
     'Crop must extend into padding',
   )
-  await page.getByRole('button', { name: 'Odczytaj zaznaczenie' }).click()
-  await page.getByRole('button', { name: 'Odczytaj zaznaczenie' }).waitFor({ timeout: 180000 })
+  await page.getByRole('button', { name: 'Read selection' }).click()
+  await page.getByRole('button', { name: 'Read selection' }).waitFor({ timeout: 180000 })
   assert.equal(
     await page.locator('#transcription').inputValue(),
     'Hamburge Fonts',
     'OCR must receive the rotated crop',
   )
-  await page.getByRole('button', { name: 'Znajdź pasujące fonty' }).click()
+  await page.getByRole('button', { name: 'Find matching fonts' }).click()
   await page.locator('.comparison-count').waitFor({ timeout: 300000 })
   assert.equal(
     await page.locator('.result-heading h3').first().textContent(),

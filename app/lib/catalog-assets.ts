@@ -8,13 +8,12 @@ export async function readCatalogAsset(base: string, asset: CatalogAsset): Promi
       asset.path,
     )
   ) {
-    throw new Error('Nieprawidłowy adres zasobu katalogu.')
+    throw new Error('Invalid catalog asset URL.')
   }
   const response = await fetch(`${base}catalog/${asset.path}`, {
     signal: AbortSignal.timeout(30000),
   })
-  if (!response.ok)
-    throw new Error(`Nie udało się pobrać zasobu katalogu (HTTP ${response.status}).`)
+  if (!response.ok) throw new Error(`Could not download a catalog asset (HTTP ${response.status}).`)
   const buffer = await response.arrayBuffer(),
     header = new Uint8Array(buffer)
   // Hash the decoded payload: CDNs may transparently decompress .gz files.
@@ -27,7 +26,6 @@ export async function readCatalogAsset(base: string, asset: CatalogAsset): Promi
   const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', decoded))]
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('')
-  if (hash !== asset.sha256)
-    throw new Error('Zasób katalogu ma nieprawidłową sumę kontrolną. Spróbuj ponownie.')
+  if (hash !== asset.sha256) throw new Error('Catalog asset checksum mismatch. Please try again.')
   return new Uint8Array(decoded)
 }

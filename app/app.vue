@@ -31,7 +31,7 @@ watch(
     rect.value = remapSelection(rect.value, image.value.width, image.value.height, previous, next)
     autoApplied.value = false
     detections.value = []
-    if (ocrBusy.value) ocrStatus.value = 'Obraz obrócony. Możesz ponownie odczytać zaznaczenie.'
+    if (ocrBusy.value) ocrStatus.value = 'Image rotated. You can read the selection again.'
     resetOCR()
     ++ocrId
     ocrBusy.value = false
@@ -125,11 +125,11 @@ function updatePreview() {
 
 async function loadFile(file: File) {
   if (!file.type.startsWith('image/')) {
-    error.value = 'Wybierz obraz PNG, JPG, WebP lub inny format obsługiwany przez przeglądarkę.'
+    error.value = 'Choose a PNG, JPG, WebP or another image format supported by your browser.'
     return
   }
   if (file.size > 40 * 1024 * 1024) {
-    error.value = 'Ten plik ma ponad 40 MB. Wybierz mniejszy obraz lub wycinek.'
+    error.value = 'This file exceeds 40 MB. Choose a smaller image or crop.'
     return
   }
   const url = URL.createObjectURL(file)
@@ -159,7 +159,7 @@ async function loadSource(url: string, name: string, sampleText?: string) {
     await img.decode()
     if (id !== uploadId) return
     if (img.naturalWidth * img.naturalHeight > 60000000)
-      throw new Error('Obraz ma ponad 60 megapikseli. Wybierz mniejszy wycinek.')
+      throw new Error('This image exceeds 60 megapixels. Choose a smaller crop.')
     const scale = Math.min(1, 3000 / Math.max(img.naturalWidth, img.naturalHeight)),
       canvas = document.createElement('canvas')
     canvas.width = Math.round(img.naturalWidth * scale)
@@ -200,11 +200,10 @@ async function loadSource(url: string, name: string, sampleText?: string) {
     imageBusy.value = false
     updatePreview()
     if (sampleText) {
-      ocrStatus.value = 'Tekst przykładu jest już wpisany. Możesz go zmienić.'
+      ocrStatus.value = 'The sample text is already filled in. You can edit it.'
     } else void runOCR(false)
   } catch (e) {
-    if (id === uploadId)
-      error.value = e instanceof Error ? e.message : 'Nie udało się odczytać obrazu.'
+    if (id === uploadId) error.value = e instanceof Error ? e.message : 'Could not read the image.'
   } finally {
     if (id === uploadId) imageBusy.value = false
   }
@@ -307,12 +306,12 @@ async function runOCR(selection: boolean) {
           selectDetection(best)
         }
       }
-      ocrStatus.value = `Odczytano ${found.length === 1 ? 'napis' : `${found.length} napisy`}. Sprawdź tekst i popraw ewentualne błędy.`
-    } else ocrStatus.value = 'Nie udało się odczytać napisu. Zaznacz go i wpisz tekst ręcznie.'
+      ocrStatus.value = `Read ${found.length === 1 ? 'one line' : `${found.length} lines`}. Check the text and correct any mistakes.`
+    } else ocrStatus.value = 'Could not read the text. Select it and type it manually.'
   } catch (e) {
     if (id === ocrId) {
       console.error(e)
-      ocrError.value = 'OCR jest niedostępny. Możesz ponowić odczyt albo wpisać tekst ręcznie.'
+      ocrError.value = 'OCR is unavailable. You can retry or type the text manually.'
       ocrStatus.value = ''
     }
   } finally {
@@ -332,7 +331,7 @@ async function search() {
   resultsText.value = currentText.value
   if (typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') {
     error.value =
-      'Rozpoznawanie wymaga aktualnej przeglądarki z OffscreenCanvas. Otwórz stronę w aktualnym Chrome, Edge, Firefox lub Safari.'
+      'Font recognition requires a browser with OffscreenCanvas support. Open this page in an up-to-date version of Chrome, Edge, Firefox or Safari.'
     busy.value = false
     return
   }
@@ -356,7 +355,7 @@ async function search() {
       }
     }
     worker.onerror = (e) => {
-      error.value = `Nie udało się uruchomić analizy. ${e.message || 'Spróbuj ponownie.'}`
+      error.value = `Could not start the search. ${e.message || 'Please try again.'}`
       cancel()
     }
     const canvas = selectedCanvas(),
@@ -377,14 +376,14 @@ async function search() {
       [rgba.buffer],
     )
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Nie udało się rozpocząć analizy.'
+    error.value = e instanceof Error ? e.message : 'Could not start the search.'
     cancel()
   }
 }
 const examples = [
-  { file: 'montserrat-oblique.png', label: 'Obrót i kolor' },
-  { file: 'playfair-display-tracking.png', label: 'Szeryfy i odstępy' },
-  { file: 'lobster-clean.png', label: 'Pismo odręczne' },
+  { file: 'montserrat-oblique.png', label: 'Rotation and color' },
+  { file: 'playfair-display-tracking.png', label: 'Serifs and spacing' },
+  { file: 'lobster-clean.png', label: 'Script lettering' },
 ]
 onMounted(async () => {
   window.addEventListener('paste', paste)
@@ -465,37 +464,37 @@ onBeforeUnmount(() => {
     <header class="topbar">
       <a class="brand" :href="base">what<span>the</span>freefont<span class="brand-dot">.</span></a>
       <div class="topbar-right">
-        <button class="text-button" @click="help = !help">Jak to działa?</button>
-        <div class="privacy"><span class="status-dot" /> Obraz zostaje u Ciebie</div>
+        <button class="text-button" @click="help = !help">How does it work?</button>
+        <div class="privacy"><span class="status-dot" /> Your image stays on your device</div>
       </div>
     </header>
     <main>
       <div class="intro">
         <div>
           <p class="eyebrow">GOOGLE FONTS · IMAGE SEARCH</p>
-          <h1>Jaki to <em>font?</em></h1>
-          <p>Dodaj obraz. Zaznacz napis. Znajdź darmowy krój.</p>
+          <h1>What <em>font</em> is this?</h1>
+          <p>Add an image. Select the text. Find a free font.</p>
         </div>
         <div class="catalog-count">
-          <strong>{{ catalog?.families?.toLocaleString('pl-PL') || '…' }}</strong
-          ><span>rodzin Google Fonts<br />do porównania</span>
+          <strong>{{ catalog?.families?.toLocaleString('en-US') || '…' }}</strong
+          ><span>Google Fonts families<br />to compare</span>
         </div>
       </div>
       <div v-if="help" class="help-panel">
-        <strong>Od obrazu do darmowego fontu</strong>
+        <strong>From an image to a free font</strong>
         <p>
-          Zaznacz jedną linię z jednego kroju pisma. OCR wpisze tekst za Ciebie — popraw go,
-          zachowując wielkość liter i znaki. Porównujemy kształt napisu z Google Fonts,
-          uwzględniając obrót, rozmiar, grubość i odstępy.
+          Select a single line in one font. OCR fills in the text for you — correct any mistakes,
+          preserving capitalization and special characters. We compare the shapes with Google Fonts,
+          accounting for rotation, size, weight and spacing.
         </p>
         <p>
-          Procenty to względne prawdopodobieństwa wśród wyświetlonych propozycji, oszacowane z
-          podobieństwa. Nie są gwarancją identyfikacji. Bardzo krótki napis, rozmycie, perspektywa
-          lub font spoza katalogu mogą dać słabsze wyniki.
+          Percentages are relative likelihoods among the suggestions, estimated from visual
+          similarity. They do not guarantee identification. Very short text, blur, perspective
+          distortion or fonts outside the catalog can make matches less accurate.
         </p>
         <p>
-          Zdjęcia pozostają na tym urządzeniu. Pierwsza analiza pobiera statyczne indeksy, modele i
-          pliki fontów; może to potrwać dłużej.
+          Your images stay on this device. The first search downloads static indexes, models and
+          font files, so it may take longer.
         </p>
       </div>
       <input
@@ -503,24 +502,24 @@ onBeforeUnmount(() => {
         type="file"
         accept="image/*"
         hidden
-        aria-label="Wybierz obraz"
+        aria-label="Choose an image"
         @change="onFile"
       />
       <div v-if="error" class="message error" role="alert">
         {{ error
-        }}<button class="text-button" @click="error = ''" aria-label="Zamknij komunikat">×</button>
+        }}<button class="text-button" @click="error = ''" aria-label="Dismiss message">×</button>
       </div>
       <template v-if="!source">
         <section class="upload-panel" :class="{ dragging }">
           <div class="upload-symbol">Aa<span>↗</span></div>
-          <h2>{{ imageBusy ? 'Otwieranie obrazu…' : 'Przeciągnij tu obraz' }}</h2>
-          <p>Logo, zrzut ekranu lub zdjęcie — PNG, JPG, WebP.</p>
+          <h2>{{ imageBusy ? 'Opening image…' : 'Drop an image here' }}</h2>
+          <p>A logo, screenshot or photo — PNG, JPG, WebP.</p>
           <button class="primary" :disabled="imageBusy" @click="fileInput?.click()">
-            Wybierz obraz <span>↗</span></button
-          ><span class="paste-hint">lub wklej ze schowka <kbd>⌘ / Ctrl V</kbd></span>
+            Choose an image <span>↗</span></button
+          ><span class="paste-hint">or paste from your clipboard <kbd>⌘ / Ctrl V</kbd></span>
         </section>
         <div class="examples">
-          <span class="examples-label">SPRAWDŹ NA PRZYKŁADZIE</span
+          <span class="examples-label">TRY AN EXAMPLE</span
           ><button
             v-for="example in examples"
             :key="example.file"
@@ -540,10 +539,10 @@ onBeforeUnmount(() => {
             <div class="panel-heading">
               <div>
                 <span class="step">01</span>
-                <h2>Zaznacz napis</h2>
+                <h2>Select the text</h2>
               </div>
               <button class="text-button" :disabled="imageBusy" @click="fileInput?.click()">
-                Zmień obraz ↗
+                Change image ↗
               </button>
             </div>
             <CropEditor
@@ -562,15 +561,15 @@ onBeforeUnmount(() => {
             />
             <div class="editor-toolbar">
               <span class="filename" :title="fileName">{{ fileName }}</span
-              ><button class="text-button" @click="cropEditor?.draw()">Nowa ramka</button
-              ><button class="text-button" @click="fullImage">Cały obraz</button
-              ><button class="text-button" @click="straighten">Wyprostuj ↻</button>
+              ><button class="text-button" @click="cropEditor?.draw()">New selection</button
+              ><button class="text-button" @click="fullImage">Full image</button
+              ><button class="text-button" @click="straighten">Straighten ↻</button>
               <button v-if="angle !== 0" class="text-button" @click="resetRotation">
-                Resetuj obrót
+                Reset rotation
               </button>
             </div>
             <div class="rotation-control">
-              <label for="angle">Obrót</label
+              <label for="angle">Rotation</label
               ><input
                 id="angle"
                 v-model.number="manualAngle"
@@ -585,21 +584,21 @@ onBeforeUnmount(() => {
                 min="-180"
                 max="180"
                 step=".1"
-                aria-label="Obrót w stopniach"
+                aria-label="Rotation in degrees"
               /><span>°</span
               ><button
                 class="text-button"
-                aria-label="Odwróć obraz o 180 stopni"
+                aria-label="Rotate image by 180 degrees"
                 @click="flipImage"
               >
                 180°
               </button>
             </div>
             <p v-if="autoApplied" class="rotation-note" role="status">
-              Obraz wyprostowany automatycznie. Możesz poprawić obrót lub go zresetować.
+              Image straightened automatically. You can adjust or reset the rotation.
             </p>
             <div v-if="detections.length > 1" class="detected-lines">
-              <span>Wykryte napisy:</span
+              <span>Detected text:</span
               ><button v-for="(d, i) in detections" :key="i" @click="selectDetection(d)">
                 {{ d.text }}
               </button>
@@ -609,27 +608,27 @@ onBeforeUnmount(() => {
             <div class="panel-heading">
               <div>
                 <span class="step">02</span>
-                <h2>Sprawdź tekst</h2>
+                <h2>Check the text</h2>
               </div>
-              <span class="small-tag">OCR + TY</span>
+              <span class="small-tag">OCR + YOU</span>
             </div>
-            <label class="field-label" for="transcription">Tekst w zaznaczeniu</label
+            <label class="field-label" for="transcription">Text in the selection</label
             ><textarea
               id="transcription"
               v-model="text"
               rows="2"
               maxlength="80"
-              placeholder="Wpisz dokładnie to, co widzisz…"
+              placeholder="Type exactly what you see…"
               spellcheck="false"
             />
             <p class="field-hint">
-              Zachowaj wielkość liter i polskie znaki. Wystarczy jedna linia.
+              Keep capitalization and special characters. One line is enough.
             </p>
             <div class="ocr-row">
               <button class="text-button" :disabled="ocrBusy" @click="runOCR(true)">
                 <span :class="{ spinner: ocrBusy }">{{ ocrBusy ? '' : '↻' }}</span>
-                {{ ocrBusy ? 'Odczytywanie…' : 'Odczytaj zaznaczenie' }}</button
-              ><select v-model="ocrEngine" aria-label="Silnik OCR">
+                {{ ocrBusy ? 'Reading…' : 'Read selection' }}</button
+              ><select v-model="ocrEngine" aria-label="OCR engine">
                 <option value="auto">OCR: auto</option>
                 <option value="paddle">PaddleOCR</option>
                 <option value="tesseract">Tesseract</option>
@@ -644,30 +643,29 @@ onBeforeUnmount(() => {
               {{ ocrError || ocrStatus }}
             </p>
             <div class="preview-heading">
-              <span class="field-label">Tak porównujemy kształt</span
-              ><span class="preview-tag">BEZ KOLORU I TŁA</span>
+              <span class="field-label">Shapes used for matching</span
+              ><span class="preview-tag">COLOR AND BACKGROUND REMOVED</span>
             </div>
             <div class="normalized-preview">
               <img
                 v-if="normalized"
                 :src="normalized"
-                alt="Wyizolowany kształt tekstu używany do porównania"
+                alt="Isolated text shapes used for matching"
               />
             </div>
             <details class="advanced">
-              <summary>Ustawienia dopasowania <span>+</span></summary>
+              <summary>Matching settings <span>+</span></summary>
               <div class="advanced-fields">
                 <label
-                  ><input v-model="thorough" type="checkbox" /> Dokładniejsze szukanie (więcej
-                  fontów)</label
+                  ><input v-model="thorough" type="checkbox" /> Thorough search (more fonts)</label
                 ><label for="polarity"
-                  >Tekst i tło<select id="polarity" v-model="mode">
-                    <option value="auto">Automatycznie, według koloru</option>
-                    <option value="dark">Ciemny tekst</option>
-                    <option value="light">Jasny tekst</option>
+                  >Text and background<select id="polarity" v-model="mode">
+                    <option value="auto">Automatic, based on color</option>
+                    <option value="dark">Dark text</option>
+                    <option value="light">Light text</option>
                   </select></label
                 ><label for="threshold"
-                  >Próg kontrastu <span>{{ threshold }}</span
+                  >Contrast threshold <span>{{ threshold }}</span
                   ><input id="threshold" v-model.number="threshold" type="range" min="-80" max="80"
                 /></label>
               </div>
@@ -678,51 +676,49 @@ onBeforeUnmount(() => {
               :disabled="!canSearch"
               @click="search"
             >
-              Znajdź pasujące fonty <span>→</span></button
+              Find matching fonts <span>→</span></button
             ><button v-else class="cancel-button" @click="stopSearch">
-              Zatrzymaj analizę <span>×</span>
+              Stop search <span>×</span>
             </button>
             <span class="local-note"
-              ><span class="status-dot" /> Analiza lokalna · wyłącznie Google Fonts</span
+              ><span class="status-dot" /> Runs on your device · Google Fonts only</span
             >
           </section>
         </div>
-        <section
-          v-if="busy || results.length"
-          class="results-section"
-          aria-label="Wyniki wyszukiwania"
-        >
+        <section v-if="busy || results.length" class="results-section" aria-label="Search results">
           <div class="results-title">
             <div>
-              <p class="eyebrow">NAJBLIŻSZE DOPASOWANIA</p>
-              <h2>{{ busy ? 'Szukamy Twojego fontu…' : 'Kilka dobrych tropów.' }}</h2>
+              <p class="eyebrow">CLOSEST MATCHES</p>
+              <h2>{{ busy ? 'Finding your font…' : 'A few good matches.' }}</h2>
             </div>
-            <span v-if="info" class="comparison-count">Porównano {{ info.compared }} odmian</span>
+            <span v-if="info" class="comparison-count"
+              >Compared {{ info.compared }} font variants</span
+            >
           </div>
           <div v-if="busy" class="progress-panel" role="status">
             <div>
-              <span><i class="spinner" /> {{ progress?.stage || 'Przygotowywanie analizy' }}</span
+              <span><i class="spinner" /> {{ progress?.stage || 'Preparing search' }}</span
               ><span>{{ progress?.done || 0 }} / {{ progress?.total || '…' }}</span>
             </div>
-            <progress :value="percent" max="100" aria-label="Postęp analizy" />
+            <progress :value="percent" max="100" aria-label="Search progress" />
             <p>
-              Pierwsze wyszukiwanie pobiera indeks i pliki fontów. Wyniki uzupełniają się na
-              bieżąco.
+              The first search downloads the index and font files. Results appear as the search
+              progresses.
             </p>
           </div>
           <p v-if="stale" class="message warning">
-            Zaznaczenie lub ustawienia się zmieniły. Wyszukaj ponownie, aby odświeżyć wyniki.
+            The selection or settings have changed. Search again to update the results.
           </p>
           <p v-if="info?.lowQuality" class="message warning">
-            Podobieństwo jest niewielkie. Sprawdź zaznaczenie i tekst — szukany font może też być
-            spoza Google Fonts.
+            These matches have low similarity. Check the selection and text — the font may also be
+            outside Google Fonts.
           </p>
           <p v-if="info?.failed" class="message warning">
-            Nie udało się pobrać {{ info.failed }} odmian. Wynik jest częściowy; ponów analizę przy
-            lepszym połączeniu.
+            Could not download {{ info.failed }} font variants. Results are incomplete; try again
+            with a better connection.
           </p>
           <p v-if="interrupted && results.length" class="message warning">
-            Analiza została zatrzymana. Poniżej są częściowe wyniki.
+            Search stopped. Partial results are shown below.
           </p>
           <div class="results-grid" :class="{ stale }">
             <ResultCard
@@ -734,13 +730,13 @@ onBeforeUnmount(() => {
             />
           </div>
           <p v-if="results.length" class="probability-note">
-            Procenty określają względne prawdopodobieństwo wśród tych
-            {{ results.length }} propozycji. To szacunek podobieństwa, nie pewność rozpoznania.
+            Percentages show relative likelihood among these {{ results.length }} suggestions. They
+            estimate similarity, not certainty of identification.
           </p>
         </section>
       </template>
       <footer>
-        <span>Fonty są darmowe. Odkrywanie też.</span><span>BEZ KONTA · BEZ WYSYŁANIA ZDJĘĆ</span>
+        <span>Free fonts. Free discovery.</span><span>NO ACCOUNT · NO IMAGE UPLOADS</span>
       </footer>
     </main>
   </div>

@@ -26,14 +26,14 @@ try {
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/')
   await page.locator('input[type=file]').setInputFiles(fixturePath)
-  const angle = page.getByRole('spinbutton', { name: 'Obrót w stopniach' })
-  const reset = page.getByRole('button', { name: 'Resetuj obrót' })
+  const angle = page.getByRole('spinbutton', { name: 'Rotation in degrees' })
+  const reset = page.getByRole('button', { name: 'Reset rotation' })
   await reset.waitFor()
   assert(Math.abs(Number(await angle.inputValue()) + 17) < 1, 'Straighten on upload')
   assert(await page.locator('.rotation-note').isVisible())
   assert((await page.locator('.rotated-image').getAttribute('transform'))?.includes('rotate(-17'))
   await page.waitForFunction(
-    () => document.querySelector('.ocr-status')?.textContent?.startsWith('Odczytano'),
+    () => document.querySelector('.ocr-status')?.textContent?.startsWith('Read '),
     undefined,
     { timeout: 180000 },
   )
@@ -44,10 +44,10 @@ try {
   assert.equal(await reset.count(), 0)
   assert.equal(await page.locator('.rotation-note').count(), 0)
   // Searching must not silently reapply the correction that was just reset.
-  await page.getByRole('button', { name: 'Znajdź pasujące fonty' }).click()
+  await page.getByRole('button', { name: 'Find matching fonts' }).click()
   assert.equal(await angle.inputValue(), '0')
-  await page.getByRole('button', { name: 'Zatrzymaj analizę' }).click()
-  await page.getByRole('button', { name: 'Odwróć obraz o 180 stopni' }).click()
+  await page.getByRole('button', { name: 'Stop search' }).click()
+  await page.getByRole('button', { name: 'Rotate image by 180 degrees' }).click()
   assert.equal(await angle.inputValue(), '-180')
   assert(await reset.isVisible())
   await reset.click()
@@ -61,7 +61,7 @@ try {
   await page.locator('input[type=file]').setInputFiles(fixturePath)
   await reset.waitFor()
   await reset.click()
-  await page.getByRole('button', { name: 'Odczytaj zaznaczenie' }).waitFor()
+  await page.getByRole('button', { name: 'Read selection' }).waitFor()
   assert.equal(await angle.inputValue(), '0')
   await page.locator('input[type=file]').setInputFiles('public/examples/playfair-display-clean.png')
   await page.locator('.filename').filter({ hasText: 'playfair-display-clean.png' }).waitFor()

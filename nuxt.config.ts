@@ -17,14 +17,14 @@ export default defineNuxtConfig({
   css: ['~/assets/main.css'],
   app: {
     head: {
-      title: 'What the Free Font — rozpoznaj font z obrazu',
-      htmlAttrs: { lang: 'pl' },
+      title: 'What the Free Font — identify fonts from images',
+      htmlAttrs: { lang: 'en' },
       link: [{ rel: 'icon', type: 'image/svg+xml', href: 'favicon.svg' }],
       meta: [
         {
           name: 'description',
           content:
-            'Znajdź pasujące kroje Google Fonts. Analiza obrazu i OCR lokalnie w Twojej przeglądarce.',
+            'Find matching Google Fonts. Image analysis and OCR run locally in your browser.',
         },
       ],
     },

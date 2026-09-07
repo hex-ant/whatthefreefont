@@ -44,5 +44,5 @@ it('rejects valid gzip containing wrong data of the same size', async () => {
     'fetch',
     vi.fn(async () => new Response(bad)),
   )
-  await expect(download('/', asset)).rejects.toThrow('sumę kontrolną')
+  await expect(download('/', asset)).rejects.toThrow('checksum')
 })

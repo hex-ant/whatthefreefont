@@ -49,14 +49,14 @@ Obrót działa na całym obrazie przed wycinaniem. Podgląd obejmuje wszystkie n
 oraz dodatkowy margines, w który można rozciągnąć ramkę. OCR i dopasowanie pobierają
 ten sam wycinek obróconego obrazu; obrót nie jest nakładany drugi raz na wycinek.
 Przestrzeń poza obrazem jest dopełniana oszacowanym kolorem jego tła. Przycisk
-„Wyprostuj” obraca widoczny obraz i rozszerza zaznaczenie, aby zachować jego zawartość.
+„Straighten” obraca widoczny obraz i rozszerza zaznaczenie, aby zachować jego zawartość.
 Po wczytaniu obraz jest automatycznie prostowany przed OCR, jeśli estymator wykryje
 wyraźny kierunek tekstu i poprawę koncentracji linii. Zakładamy, że tekst nie jest do
 góry nogami; automatyczne prostowanie nie rozstrzyga orientacji 180°. Niejednoznaczne
-obrazy pozostają bez zmian. Każdy niezerowy obrót pokazuje przycisk „Resetuj obrót”.
+obrazy pozostają bez zmian. Każdy niezerowy obrót pokazuje przycisk „Reset rotation”.
 Reset i ręczna korekta są zachowywane — OCR ani wyszukiwanie nie prostują obrazu ponownie.
 Ręczna zmiana kąta utrzymuje środek ramki na tym samym fragmencie obrazu, o ile pozwala
-na to dostępna przestrzeń. „Cały obraz” obejmuje granice obróconego obrazu.
+na to dostępna przestrzeń. „Full image” obejmuje granice obróconego obrazu.
 
 ## Architektura
 

@@ -26,8 +26,8 @@ await page.addInitScript(() => {
   })
 })
 await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/', { waitUntil: 'networkidle' })
-await page.getByRole('button', { name: /Obrót i kolor/ }).click()
-await page.getByRole('button', { name: 'Nowa ramka' }).click()
+await page.getByRole('button', { name: /Rotation and color/ }).click()
+await page.getByRole('button', { name: 'New selection' }).click()
 const svg = page.locator('.crop-svg'),
   box = await svg.boundingBox()
 assert(box)
@@ -46,7 +46,7 @@ await page.keyboard.press('ArrowRight')
 assert.equal(Number(await rect.getAttribute('x')), before.x + 1)
 await page.keyboard.press('Alt+ArrowRight')
 assert.equal(Number(await rect.getAttribute('width')), before.width + 1)
-await page.getByRole('button', { name: 'Cały obraz' }).click()
+await page.getByRole('button', { name: 'Full image' }).click()
 const toolResult = await page.evaluate(async () => {
   const tool = (window as any).__fontTools.configure_font_search
   let invalid = false
@@ -60,27 +60,27 @@ const toolResult = await page.evaluate(async () => {
 })
 assert(toolResult.invalid)
 assert.equal(await page.locator('#transcription').inputValue(), 'Hamburge Fonts')
-await page.getByRole('button', { name: 'Znajdź pasujące fonty' }).click()
-await page.getByRole('button', { name: 'Zatrzymaj analizę' }).click()
+await page.getByRole('button', { name: 'Find matching fonts' }).click()
+await page.getByRole('button', { name: 'Stop search' }).click()
 assert.equal(await page.locator('.progress-panel').count(), 0)
 await page.locator('input[type=file]').setInputFiles('public/examples/playfair-display-clean.png')
 await page.waitForFunction(
-  () => document.querySelector('.ocr-status')?.textContent?.startsWith('Odczytano'),
+  () => document.querySelector('.ocr-status')?.textContent?.startsWith('Read '),
   {},
   { timeout: 120000 },
 )
 assert.equal(await page.locator('#transcription').inputValue(), 'Hamburge Fonts')
 assert((await page.locator('.detected-box').count()) > 0)
 await page.locator('input[type=file]').setInputFiles('public/examples/poppins-clean.png')
-await page.locator('#transcription').fill('Moja ręczna korekta')
+await page.locator('#transcription').fill('My manual correction')
 await page.waitForFunction(
-  () => document.querySelector('.ocr-status')?.textContent?.startsWith('Odczytano'),
+  () => document.querySelector('.ocr-status')?.textContent?.startsWith('Read '),
   {},
   { timeout: 120000 },
 )
 assert.equal(
   await page.locator('#transcription').inputValue(),
-  'Moja ręczna korekta',
+  'My manual correction',
   'Late OCR must preserve manual corrections',
 )
 await page.setViewportSize({ width: 390, height: 844 })

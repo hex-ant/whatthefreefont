@@ -93,14 +93,14 @@ async function search(input: {
   const text = input.text.normalize('NFC').trim().replace(/\s+/g, ' ')
   palette = samplePalette(input.rgba, input.width, input.height)
   if (!text || [...text].length > 80)
-    throw new Error('Wpisz od 1 do 80 znaków z jednej linii tekstu.')
+    throw new Error('Enter 1 to 80 characters from a single line of text.')
   if (!catalog) {
-    progress('Wczytywanie katalogu', 0, 1)
+    progress('Loading catalog', 0, 1)
     const r = await fetch(`${input.base}catalog/catalog.json`, {
       cache: 'no-cache',
       signal: AbortSignal.timeout(30000),
     })
-    if (!r.ok) throw new Error('Nie udało się pobrać katalogu fontów.')
+    if (!r.ok) throw new Error('Could not download the font catalog.')
     catalog = await r.json()
     if (
       catalog.version !== 2 ||
@@ -108,7 +108,7 @@ async function search(input: {
       catalog.indexHeight !== 24 ||
       !catalog.variants.every((v, i) => v.id === i)
     ) {
-      throw new Error('Katalog ma nieobsługiwaną wersję. Odśwież stronę lub przebuduj zasoby.')
+      throw new Error('Unsupported catalog version. Refresh the page or rebuild the assets.')
     }
   }
   if (!coverage) {
@@ -120,7 +120,9 @@ async function search(input: {
       data.fonts.length !== catalog.variants.length ||
       !data.fonts.every((i) => Array.isArray(data.sets[i]))
     )
-      throw new Error('Mapa znaków nie pasuje do katalogu. Odśwież stronę lub przebuduj zasoby.')
+      throw new Error(
+        'The character coverage map does not match the catalog. Refresh the page or rebuild the assets.',
+      )
     coverage = data
   }
   const coveredSets = coverage.sets.map((ranges) => coversText(ranges, text))
@@ -128,14 +130,14 @@ async function search(input: {
     catalog.variants.filter((v) => coveredSets[coverage.fonts[v.id]!]).map((v) => v.id),
   )
   if (!eligible.size)
-    throw new Error('Katalog nie zawiera fontu obsługującego wszystkie wpisane znaki.')
+    throw new Error('No font in the catalog supports all the characters you entered.')
   let mask = trim(fromRGBA(input.rgba, input.width, input.height, input.mode, input.threshold))
   if (
     mask.width < 3 ||
     mask.height < 3 ||
     mask.data.reduce((s, v) => s + (v > 128 ? 1 : 0), 0) < 12
   )
-    throw new Error('W zaznaczeniu nie widać tekstu. Popraw ramkę lub kontrast.')
+    throw new Error('No text is visible in the selection. Adjust the selection or contrast.')
   if (input.manualAngle) mask = rotate(mask, input.manualAngle)
   const angle = input.autoRotate ? estimateAngle(mask) : 0
   if (Math.abs(angle) > 0.05) mask = rotate(mask, -angle)
@@ -149,16 +151,16 @@ async function search(input: {
         if (cache.get(g.char)!.length !== catalog.variants.length * GLYPH_BYTES) {
           cache.delete(g.char)
           throw new Error(
-            'Indeks znaków nie pasuje do katalogu. Odśwież stronę i spróbuj ponownie.',
+            'The character index does not match the catalog. Refresh the page and try again.',
           )
         }
       }
-      progress('Wczytywanie kształtów znaków', ++loaded, glyphs.length)
+      progress('Loading character shapes', ++loaded, glyphs.length)
     }),
   )
   const ranked = rankIndex(mask, text, catalog, cache).filter((r) => eligible.has(r.id)),
     byId = new Map(ranked.map((r) => [r.id, r]))
-  if (!ranked.length) throw new Error('Katalog nie zawiera fontów obsługujących ten alfabet.')
+  if (!ranked.length) throw new Error('No fonts in the catalog support this writing system.')
   const shortlist = new Set<number>(),
     families = new Set<string>()
   const target = input.thorough ? 200 : 90
@@ -280,7 +282,7 @@ async function search(input: {
       }),
     )
   }
-  await compare([...shortlist], 'Porównywanie fontów')
+  await compare([...shortlist], 'Comparing fonts')
   const severelyConnected = segmentCount < count * 0.72
   if (
     fallbackIds.size &&
@@ -289,7 +291,7 @@ async function search(input: {
     const expanded = [...fallbackIds].filter((id) => !shortlist.has(id))
     for (const id of expanded) shortlist.add(id)
     completed = 0
-    await compare(expanded, 'Sprawdzanie krojów pisankowych i ozdobnych')
+    await compare(expanded, 'Checking script and decorative fonts')
   }
   const best = probabilities(results, text.length)
     .slice(0, input.thorough ? 8 : 5)
@@ -298,7 +300,7 @@ async function search(input: {
     .filter((v) => eligible.has(v.id) && best.includes(v.family) && !shortlist.has(v.id))
     .map((v) => v.id)
   completed = 0
-  if (extra.length) await compare(extra, 'Dopasowywanie grubości i kursywy')
+  if (extra.length) await compare(extra, 'Matching weights and italics')
   // Hinting and antialiasing change with physical pixel size. Re-render strong
   // candidates near the source size instead of trusting one canonical size.
   const refineFamilies = new Set(probabilities(results, text.length).map((r) => r.font.family))
@@ -333,12 +335,10 @@ async function search(input: {
         }
       }
     }
-    progress('Sprawdzanie szczegółów liter', ++refined, refinements.length)
+    progress('Checking letter details', ++refined, refinements.length)
   }
   if (!results.length)
-    throw new Error(
-      'Nie udało się pobrać plików fontów. Sprawdź połączenie z internetem i spróbuj ponownie.',
-    )
+    throw new Error('Could not download font files. Check your internet connection and try again.')
   const bestOrientation = results.reduce((a, b) => (a.score < b.score ? a : b)).flipped
   send('normalized', { mask: bestOrientation ? reverse : mask, angle })
   send('result', {

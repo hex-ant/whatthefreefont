@@ -54,7 +54,7 @@ async function copy() {
         <h3>{{ result.font.family }}</h3>
         <span class="font-meta"
           >{{ result.font.weight }} ·
-          {{ result.font.style === 'italic' ? 'Kursywa' : 'Regular' }}</span
+          {{ result.font.style === 'italic' ? 'Italic' : 'Regular' }}</span
         >
       </div>
       <span class="probability">{{ (result.probability * 100).toFixed(1) }}<small>%</small></span>
@@ -72,10 +72,10 @@ async function copy() {
           : {}
       "
     >
-      {{ ready ? text : failed ? 'Podgląd niedostępny' : 'Ładowanie kroju…' }}
+      {{ ready ? text : failed ? 'Preview unavailable' : 'Loading font…' }}
     </div>
     <details v-if="result.alternatives?.length" class="similar-fonts">
-      <summary>Bardzo podobne kroje ({{ result.alternatives.length }})</summary>
+      <summary>Very similar fonts ({{ result.alternatives.length }})</summary>
       <a
         v-for="name in result.alternatives"
         :key="name"
@@ -87,7 +87,7 @@ async function copy() {
     </details>
     <div class="result-actions">
       <button class="text-button" @click="copy">
-        {{ copied ? 'Skopiowano ✓' : 'Kopiuj nazwę' }}</button
+        {{ copied ? 'Copied ✓' : 'Copy name' }}</button
       ><a
         :href="`https://fonts.google.com/specimen/${encodeURIComponent(result.font.family).replaceAll('%20', '+')}`"
         target="_blank"
