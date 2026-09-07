@@ -12,6 +12,20 @@
   font-weight: 400;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Brand What';
+  src: url('https://fonts.gstatic.com/l/font?kit=V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj4PVksjLsEKJV48&skey=c04ef52a878abc32&v=v22')
+    format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Brand The';
+  src: url('https://fonts.gstatic.com/l/font?kit=rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAIpxhTn_wCQp1&skey=cd068b3e1b767e51&v=v17')
+    format('truetype');
+  font-weight: 200;
+  font-display: swap;
+}
 :root {
   font-family: 'DM Sans', sans-serif;
   color: #20241c;
@@ -102,13 +116,13 @@ button {
   line-height: 1;
 }
 .brand-what {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Brand What', 'Space Grotesk', sans-serif;
+  font-weight: 700;
 }
 .brand-the {
   margin-left: 0.065em;
-  font-family: Georgia, serif;
-  font-size: 0.94em;
-  font-style: italic;
+  font-family: 'Brand The', 'DM Sans', sans-serif;
+  font-weight: 200;
   letter-spacing: -0.06em;
 }
 .brand-free {
@@ -119,7 +133,8 @@ button {
 .brand-font {
   margin-left: 0.055em;
   font-family: Georgia, serif;
-  font-weight: 700;
+  font-weight: 400;
+  font-style: italic;
   letter-spacing: -0.065em;
 }
 .brand-dot {
