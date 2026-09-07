@@ -91,16 +91,41 @@ button {
   justify-content: space-between;
 }
 .brand {
+  display: inline-flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  white-space: nowrap;
   text-decoration: none;
-  font-family: 'Space Grotesk', sans-serif;
   font-size: 25px;
-  font-weight: 700;
-  letter-spacing: -1.3px;
-}
-.brand > span:first-child {
   font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+.brand-what {
+  font-family: 'Space Grotesk', sans-serif;
+}
+.brand-the {
+  margin-left: 0.065em;
+  font-family: Georgia, serif;
+  font-size: 0.94em;
+  font-style: italic;
+  letter-spacing: -0.06em;
+}
+.brand-free {
+  margin-left: 0.055em;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: -0.065em;
+}
+.brand-font {
+  margin-left: 0.055em;
+  font-family: Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.065em;
 }
 .brand-dot {
+  margin-left: 0.015em;
+  font-family: Georgia, serif;
+  font-weight: 700;
   color: #739f25;
 }
 .privacy {

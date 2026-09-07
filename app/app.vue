@@ -462,7 +462,11 @@ onBeforeUnmount(() => {
     @drop.prevent="drop"
   >
     <header class="topbar">
-      <a class="brand" :href="base">what<span>the</span>freefont<span class="brand-dot">.</span></a>
+      <a class="brand" :href="base" aria-label="What the Free Font — home">
+        <span class="brand-what">what</span><span class="brand-the">the</span
+        ><span class="brand-free">free</span><span class="brand-font">font</span
+        ><span class="brand-dot" aria-hidden="true">.</span>
+      </a>
       <div class="topbar-right">
         <button class="text-button" @click="help = !help">How does it work?</button>
         <div class="privacy"><span class="status-dot" /> Your image stays on your device</div>
