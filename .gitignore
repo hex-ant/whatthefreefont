@@ -12,3 +12,6 @@ playwright-report/
 public/licenses/
 .env.*
 !.env.example
+
+# Local documentation and generated reports
+/docs/

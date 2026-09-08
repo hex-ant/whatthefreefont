@@ -1,174 +1,178 @@
 # What the Free Font
 
-Rozpoznawanie fontów z obrazów, wyłącznie w katalogu Google Fonts. Nuxt 4 / Vue 3,
-TypeScript, pnpm. Całe przetwarzanie obrazu, OCR i dopasowanie odbywa się w
-przeglądarce. Build zawiera wyłącznie pliki statyczne.
+Identify fonts from images using the Google Fonts catalog. Built with Nuxt 4 /
+Vue 3, TypeScript, and pnpm. All image processing, OCR, and matching run in the
+browser. The build contains only static files.
 
-## Uruchomienie
+## Getting started
 
-Wymagane: Node.js 22.12+ (CI używa Node.js 24) i pnpm w wersji z `packageManager`.
+Requirements: Node.js 22.12+ (CI uses Node.js 24) and the pnpm version specified in `packageManager`.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Produkcja:
+Production:
 
 ```sh
 pnpm build
 pnpm preview
 ```
 
-Na dowolny hosting statyczny/CDN wgraj **wyłącznie `.output/public`**. Nie potrzeba
-Node.js na hostingu, konta, kluczy, API, funkcji serwerowych ani bazy danych.
-`pnpm build` sprawdza integralność katalogu i modeli oraz generuje informacje
-o licencjach w `licenses/` przed wygenerowaniem strony.
-`nuxt generate` wykonuje pracę serwera jedynie podczas budowania projektu.
+Upload **only `.output/public`** to any static host or CDN. Hosting does not require
+Node.js, accounts, keys, APIs, server functions, or a database.
+`pnpm build` checks the integrity of the catalog and models and generates license
+notices in `licenses/` before generating the site.
+`nuxt generate` performs server-side work only while building the project.
 
-Dla hostingu w podkatalogu ustaw `NUXT_APP_BASE_URL=/nazwa/` podczas budowania.
-Wymagane jest HTTP(S), nie otwieranie pliku `index.html` przez `file://`.
+For hosting under a subdirectory, set `NUXT_APP_BASE_URL=/name/` at build time.
+HTTP(S) is required; do not open `index.html` through `file://`.
 
-## SEO i podglądy linków
+## SEO and link previews
 
-Strona startowa jest prerenderowana podczas builda: treść, canonical, Open Graph,
-Twitter Card i JSON-LD są dostępne w HTML bez JavaScriptu. OCR i dopasowanie nadal
-wykonują się wyłącznie w przeglądarce. Hosting otrzymuje wyłącznie pliki statyczne.
+The home page is prerendered at build time: its content, canonical URL, Open Graph,
+Twitter Card, and JSON-LD are available in HTML without JavaScript. OCR and matching
+still run entirely in the browser. The host receives only static files.
 
-Domyślny adres publiczny to `https://whatthefreefont.com/`. Dla innej domeny ustaw
-`SITE_URL` podczas budowania, np. `SITE_URL=https://example.com/ pnpm build`.
-Dla podkatalogu ustaw obie wartości: `SITE_URL=https://example.com/fonts/`
-i `NUXT_APP_BASE_URL=/fonts/`. Nie ustawiaj `SITE_URL` na adres lokalny ani tymczasowy
-adres podglądu, gdy przygotowujesz produkcję.
+The default public URL is `https://whatthefreefont.com/`. For another domain, set
+`SITE_URL` at build time, for example `SITE_URL=https://example.com/ pnpm build`.
+For a subdirectory, set both `SITE_URL=https://example.com/fonts/`
+and `NUXT_APP_BASE_URL=/fonts/`. Do not use a local or temporary preview URL as
+`SITE_URL` when preparing a production build.
 
-Build generuje `robots.txt` i `sitemap.xml` oraz oznacza dokumenty zapasowe
-`200.html` i `404.html` jako `noindex`. Na końcu uruchamia `pnpm test:seo`, który
-sprawdza rzeczywisty HTML i pliki wynikowe. Dane aplikacji nie zawierają fikcyjnych
-ocen ani recenzji. Konfiguracja jest w `config/site.ts`.
+The build generates `robots.txt` and `sitemap.xml` and marks the fallback documents
+`200.html` and `404.html` as `noindex`. It finishes by running `pnpm test:seo`, which
+checks the actual HTML and output files. The application metadata does not contain
+fabricated ratings or reviews. Configuration lives in `config/site.ts`.
 
-Grafika udostępniania to `public/og-image.png` (1200 × 630). Instrukcja jej
-odtwarzania: [docs/social/README.md](docs/social/README.md).
+The share image is `public/og-image.png` (1200 × 630). Run `pnpm social:generate`
+to rebuild it and the PNG icons from `scripts/build-social-image.ts`. Generation
+requires Georgia installed locally (the macOS Supplemental font directory is the
+default), or `GEORGIA_FONT_DIR` pointing to a directory containing `Georgia.ttf`,
+`Georgia Bold.ttf`, and `Georgia Bold Italic.ttf`. Google Fonts are cached in
+`.cache/fonts/`; font files are not embedded in the generated assets. Normal builds
+use the committed PNGs and do not require Georgia or regenerate graphics.
 
-## Funkcje
+## Features
 
-- Upload, drag & drop, wklejanie obrazu ze schowka; przykłady gotowe do sprawdzenia.
-- Wykrywanie i odczyt tekstu: PaddleOCR PP-OCRv6 small przez ONNX Runtime Web,
-  z Tesseract.js (angielski + polski) jako alternatywą i automatycznym fallbackiem.
-- Wybór wykrytego napisu; rysowanie, przesuwanie i skalowanie ramki myszą lub
-  dotykiem. Strzałki przesuwają ramkę, Alt + strzałki zmieniają rozmiar, Shift
-  zwiększa krok. Shift + przeciągnięcie rysuje nową ramkę.
-- Ręczna korekta tekstu, obrotu, sposobu oddzielenia tła i progu kontrastu.
-- Automatyczne prostowanie, sprawdzanie orientacji 180°, normalizacja skali i koloru.
-- Porównanie napisów z tolerancją na tracking, kerning i odstępy między słowami.
-- Osiem propozycji z podglądem własnego tekstu, względnymi prawdopodobieństwami,
-  podobnymi rodzinami, kopiowaniem nazwy i linkiem do Google Fonts.
-- Postęp i częściowe wyniki, zatrzymanie analizy, obsługa błędów pobierania;
-  zmiana parametrów unieważnia poprzednie wyniki.
+- Upload, drag and drop, or paste an image from the clipboard; ready-to-use examples.
+- Text detection and recognition with PaddleOCR PP-OCRv6 small through ONNX Runtime
+  Web, with Tesseract.js (English + Polish) as an alternative and automatic fallback.
+- Select detected text; draw, move, and resize the crop with a mouse or touch.
+  Arrow keys move the crop, Alt + arrows resize it, and Shift increases the step.
+  Shift + drag draws a new crop.
+- Manually correct the text, rotation, background separation, and contrast threshold.
+- Automatic straightening, 180° orientation checks, and scale and color normalization.
+- Text comparison tolerant of tracking, kerning, and word spacing.
+- Eight suggestions with custom text previews, relative probabilities, similar
+  families, name copying, and links to Google Fonts.
+- Progress and partial results, cancellation, and download error handling;
+  changing parameters invalidates previous results.
 
-Obrót działa na całym obrazie przed wycinaniem. Podgląd obejmuje wszystkie narożniki
-oraz dodatkowy margines, w który można rozciągnąć ramkę. OCR i dopasowanie pobierają
-ten sam wycinek obróconego obrazu; obrót nie jest nakładany drugi raz na wycinek.
-Przestrzeń poza obrazem jest dopełniana oszacowanym kolorem jego tła. Przycisk
-„Straighten” obraca widoczny obraz i rozszerza zaznaczenie, aby zachować jego zawartość.
-Po wczytaniu obraz jest automatycznie prostowany przed OCR, jeśli estymator wykryje
-wyraźny kierunek tekstu i poprawę koncentracji linii. Zakładamy, że tekst nie jest do
-góry nogami; automatyczne prostowanie nie rozstrzyga orientacji 180°. Niejednoznaczne
-obrazy pozostają bez zmian. Każdy niezerowy obrót pokazuje przycisk „Reset rotation”.
-Reset i ręczna korekta są zachowywane — OCR ani wyszukiwanie nie prostują obrazu ponownie.
-Ręczna zmiana kąta utrzymuje środek ramki na tym samym fragmencie obrazu, o ile pozwala
-na to dostępna przestrzeń. „Full image” obejmuje granice obróconego obrazu.
+Rotation applies to the entire image before cropping. The preview includes all
+corners and an extra margin into which the crop can extend. OCR and matching use
+the same crop of the rotated image; rotation is not applied again to the crop.
+Space outside the image is filled with its estimated background color. “Straighten”
+rotates the visible image and expands the selection to preserve its contents.
+After loading, the image is automatically straightened before OCR if the estimator
+detects a clear text direction and improved line concentration. The text is assumed
+to be upright; automatic straightening does not resolve 180° orientation.
+Ambiguous images remain unchanged. Any nonzero rotation shows “Reset rotation”.
+Resets and manual adjustments are preserved: neither OCR nor searching straightens
+the image again. Manually changing the angle keeps the crop center on the same
+part of the image as far as the available space allows. “Full image” covers the
+bounds of the rotated image.
 
-## Układ interfejsu
+## Interface layout
 
-Podstawowa ścieżka to dodanie obrazu, sprawdzenie ramki i tekstu, następnie
-„Find matching fonts”. Po rozpoczęciu analizy widok przechodzi do postępu i
-wyników; „Edit selection” pozwala wrócić do edycji.
+The main flow is to add an image, check the crop and text, then select
+“Find matching fonts”. Once analysis starts, the view moves to progress and
+results; “Edit selection” returns to editing.
 
-Tekst podglądu można edytować bezpośrednio w dowolnej karcie. Zmiana jest wspólna
-dla wszystkich kart i nie zmienia tekstu wyszukiwania ani rankingu. Po edycji przy
-każdym podglądzie pojawia się ikona resetu, która przywraca tekst we wszystkich
-kartach. Nowe wyszukiwanie zaczyna podglądy od tekstu użytego do wyszukiwania.
+Preview text can be edited directly in any card. Changes apply to all cards
+without changing the search text or ranking. After an edit, a reset icon appears
+beside each preview and restores the text in every card. A new search initializes
+previews with the text used for that search.
 
-„Adjust image” zawiera obrót i pomoc dotyczącą zaznaczenia. „Advanced options”
-zawiera głębsze wyszukiwanie, wybór silnika OCR, oddzielenie tła, próg kontrastu
-i podgląd maski. Panele są domyślnie zamknięte; ich zamknięcie zachowuje ustawienia.
-„Reset rotation” pozostaje widoczne poza panelami przy każdym niezerowym obrocie.
-Wyjaśnienie procentów i liczba porównanych odmian są pod „About these results”.
+“Adjust image” contains rotation controls and selection help. “Advanced options”
+contains thorough search, OCR engine selection, background separation, the contrast
+threshold, and a mask preview. Panels are collapsed by default; closing them
+preserves their settings. “Reset rotation” stays visible outside the panels
+whenever rotation is nonzero. “About these results” explains the percentages and
+shows the number of compared variants.
 
-Uzasadnienie hierarchii, scenariusze i pomiary:
-[raport UX](docs/ux/review-2026-09-08.md).
-
-## Architektura
+## Architecture
 
 ```text
-obraz → obrót całego podglądu → ramka → OCR / potwierdzony tekst
+image → rotate the entire preview → crop → OCR / confirmed text
                 ↓
-       maska koloru wybranego wycinka
+       color mask of the selected crop
                 ↓
-       statyczne indeksy użytych znaków
+       static indices for the characters used
                 ↓
-       ranking rodzin / odmian
+       family / variant ranking
                 ↓
-       renderowanie kandydatów w przeglądarce
+       render candidates in the browser
                 ↓
-       elastyczne porównanie + kształt liter
+       flexible comparison + letter shapes
                 ↓
-       dodatkowe odmiany najlepszych rodzin → wyniki
+       additional variants of the best families → results
 ```
 
-**Katalog:** snapshot `google-font-metadata@6.0.8`, 1908 rodzin, 7543 rzeczywiste
-kombinacje grubości i stylu. Manifest zawiera wersjonowane adresy statycznych
-plików Google `fonts.gstatic.com`. Aplikacja nie odpytuje Google Fonts API,
-Fontsource API ani Hugging Face Inference API.
+**Catalog:** a `google-font-metadata@6.0.8` snapshot with 1908 families and 7543
+actual weight/style combinations. The manifest contains versioned URLs for static
+Google files on `fonts.gstatic.com`. The app does not query the Google Fonts API,
+Fontsource API, or Hugging Face Inference API.
 
-**Indeks:** 137 znaków (ASCII, polskie znaki i często używane znaki rozszerzonego
-alfabetu łacińskiego), osobny plik `<kod-znaku>.<sha256>.bin.gz` na znak. Każdy rekord zawiera siatkę
-16 × 24, proporcje glifu i wysokość. Pobierane są tylko indeksy potrzebne dla
-napisu, maksymalnie 14 różnych znaków. Wszystkie odmiany są oceniane w indeksie;
-do droższego renderowania trafia lista kandydatów. Dla tekstów poza indeksem
-uruchamiane jest szersze porównanie fontów odpowiedniego alfabetu, bez oceny
-fontów, które go nie obsługują. Statyczna, skompresowana mapa `cmap` każdej
-odmiany weryfikuje obecność wszystkich wpisanych znaków, żeby fallback
-przeglądarki nie udawał dopasowania do fontu.
+**Index:** 137 characters (ASCII, Polish characters, and common extended Latin
+characters), with a separate `<character-code>.<sha256>.bin.gz` file per character.
+Each record contains a 16 × 24 grid, glyph proportions, and height. Only indices
+needed for the text are downloaded, up to 14 distinct characters. All variants
+are scored in the index; a shortlist moves on to the more expensive rendering
+stage. Text outside the index triggers a broader comparison of fonts supporting
+the relevant script, excluding fonts that do not support it. A static, compressed
+`cmap` coverage map for each variant verifies that every entered character is
+present, preventing browser fallback fonts from masquerading as a match.
 
-**Dopasowanie:** normalizacja względem dominującego koloru tła, projekcyjna
-estymacja kąta, redukcja pustych kolumn i dynamic time warping (DTW). Dodatkowe
-porównanie kształtów liter jest używane, kiedy można je wiarygodnie rozdzielić.
-Kandydaci są renderowani na kolorach próbki, co ogranicza różnice wygładzania.
-Porównujemy tekst z naturalnym składem oraz rozdzielonymi znakami. Przy
-połączonych literach przeszukiwana jest też szersza pula krojów pisankowych i
-ozdobnych. Najlepsze rodziny są sprawdzane w dodatkowych grubościach i stylach.
-Najsilniejsi kandydaci są ponownie renderowani w rozmiarach zbliżonych do próbki,
-ponieważ hinting i wygładzanie zmieniają się wraz z fizycznym rozmiarem liter.
+**Matching:** normalization against the dominant background color, projection-based
+angle estimation, empty-column reduction, and dynamic time warping (DTW).
+Individual letter shapes provide an additional comparison when segmentation is
+reliable. Candidates are rendered using the sample's colors to reduce antialiasing
+differences. Text is compared using both natural typesetting and separated
+characters. Connected letters also trigger a broader pool of script and decorative
+candidates. The best families are checked in additional weights and styles.
+The strongest candidates are rendered again at sizes close to the sample because
+hinting and antialiasing change with the physical size of the letters.
 
-**Wydajność:** dopasowanie działa w Web Workerze z OffscreenCanvas. OCR również
-wykorzystuje worker. WASM działa jednowątkowo, więc hosting nie wymaga nagłówków
-COOP/COEP. Dla alfabetu łacińskiego pobieramy małe podzbiory WOFF2; kompletne TTF
-są używane, gdy potrzebny jest inny alfabet. Pierwsze użycie pobiera więcej
-zasobów; kolejne mogą korzystać ze zwykłego cache HTTP przeglądarki/CDN.
+**Performance:** matching runs in a Web Worker with OffscreenCanvas. OCR also uses
+a worker. WASM runs in a single thread, so hosting does not require COOP/COEP
+headers. Small WOFF2 subsets are downloaded for Latin text; full TTF files are used
+when another script is needed. First use downloads more assets; subsequent use
+can benefit from the browser's or CDN's standard HTTP cache.
 
-**Zasoby:** indeksy są w `public/catalog`, modele OCR w `public/models`.
-Wagi modeli, ich źródła, licencja i SHA-256 są opisane obok plików. Silniki OCR i
-WASM są przypięte do konkretnych wersji. Obraz jest przekazywany wyłącznie
-wewnętrznym workerom przez `postMessage`, nigdy do serwera.
+**Assets:** indices live in `public/catalog` and OCR models in `public/models`.
+Model weights, sources, licenses, and SHA-256 checksums are documented alongside
+the files. OCR engines and WASM are pinned to specific versions. Images are passed
+only to internal workers through `postMessage`, never to a server.
 
-## Co oznaczają procenty
+## What the percentages mean
 
-To względne prawdopodobieństwa **wśród wyświetlonych propozycji**, uzyskane z
-odległości wizualnych przez softmax. To nie jest skalibrowana, absolutna pewność
-identyfikacji ani ocena prawdopodobieństwa, że font w ogóle znajduje się w
-Google Fonts. Krótkie napisy mogą być nierozróżnialne w wielu rodzinach.
-Rodziny o identycznych deskryptorach badanych znaków mogą być grupowane w
-jednej propozycji, z linkami do podobnych krojów.
+These are relative probabilities **among the displayed suggestions**, obtained
+by applying softmax to visual distances. They are not calibrated, absolute
+identification confidence or an estimate of whether the font is in Google Fonts
+at all. Short text samples can be indistinguishable across many families.
+Families with identical descriptors for the tested characters may be grouped into
+one suggestion, with links to similar typefaces.
 
-Aplikacja zgłasza niewielkie podobieństwo i niepełne wyniki pobierania. Nie
-obiecuje skuteczności dla dowolnego obrazu: perspektywa, mocne rozmycie,
-zasłonięte znaki, skomplikowane tło, skrajnie nachodzące litery, osie variable
-fontów inne niż sprawdzane odmiany oraz fonty spoza snapshotu pozostają
-ograniczeniami. Najlepsze wejście to jedna czytelna linia jednego kroju pisma
-z poprawnie wpisaną treścią. Maksymalna długość próbki wynosi 80 znaków.
+The app reports low similarity and incomplete downloads. It does not promise
+accuracy for every image: perspective, severe blur, obscured characters, complex
+backgrounds, heavily overlapping letters, variable font axes beyond the tested
+variants, and fonts outside the snapshot remain limitations. The best input is
+one clear line in a single typeface with correctly entered text. The maximum
+sample length is 80 characters.
 
-## Testy i eksperymenty
+## Tests and experiments
 
 ```sh
 pnpm test
@@ -178,8 +182,8 @@ pnpm benchmark
 pnpm exec tsx scripts/check-index.ts
 ```
 
-Testy przeglądarkowe wymagają Chrome. Najpierw zbuduj i udostępnij `.output/public`
-na porcie 4173, np. `python3 -m http.server 4173 --directory .output/public`:
+Browser tests require Chrome. First build and serve `.output/public` on port 4173,
+for example with `python3 -m http.server 4173 --directory .output/public`:
 
 ```sh
 pnpm exec tsx scripts/browser-check.ts
@@ -188,98 +192,102 @@ pnpm exec tsx scripts/heldout-check.ts
 pnpm test:interactions
 ```
 
-`pnpm test:e2e` uruchamia serwer statyczny i zestaw testów przeglądarkowych,
-w tym `scripts/ux-check.ts`: główną ścieżkę, rozwijanie opcji klawiaturą,
-zachowanie parametrów, widoczność resetu i układ przy 320–1440 px.
-Wymaga wcześniejszego `pnpm build` i zainstalowanego silnika Playwright.
+`pnpm test:e2e` starts a static server and a browser test suite, including
+`scripts/ux-check.ts`: the main flow, keyboard-operated panels, parameter
+preservation, reset visibility, and layouts at widths of 320–1440 px.
+It requires a prior `pnpm build` and an installed Playwright browser engine.
 
-Testy UI i OCR można uruchomić także z `BROWSER=webkit` po zainstalowaniu
-silnika przez `pnpm exec playwright install webkit`.
+UI and OCR tests can also run with `BROWSER=webkit` after installing the engine
+with `pnpm exec playwright install webkit`.
 
-Wyniki i opis metod znajdują się w `docs/benchmarks`. PoC porównuje zwykłą
-odległość obrazów, dopasowanie pojedynczych glifów, DTW i ich połączenie.
-Osobny zestaw sprawdza cały statyczny pipeline na rodzinach i napisach innych
-niż w pierwszym PoC. Test OCR celowo czyści pole tekstowe przed odczytem.
-To testy syntetyczne; nie należy przedstawiać ich jako skuteczności na dowolnych
-zdjęciach użytkowników. Przeglądarkowe testy potwierdzają również brak żądań
-wysyłających dane oraz mobilny układ strony.
+Reports are written locally to `docs/benchmarks` by default. The entire `docs/`
+directory is ignored by Git and is not included in clones. The PoC compares plain
+image distance, individual glyph matching, DTW, and their combination. A separate
+suite checks the full static pipeline on families and text samples different from
+the first PoC. The OCR test deliberately clears the text field before recognition.
+These are synthetic tests and should not be presented as accuracy on arbitrary
+user photos. Browser tests also verify the absence of requests that send user
+data and check the mobile layout.
 
-## Aktualizacja katalogu
+## Updating the catalog
 
 ```sh
 pnpm catalog
 ```
 
-Ten **skrypt budowania**, uruchamiany lokalnie, pobiera fonty Google, weryfikuje
-obecność znaków przez fontkit i renderuje indeks. Pełne TTF są cache'owane w
-`.cache/fonts` (poza Gitem; kilka GB). Nie są potrzebne do uruchomienia gotowej
-strony. Niekompletne pliki cache są pobierane ponownie. Przykład naprawy wpisów:
+This **build script**, run locally, downloads Google fonts, verifies character
+coverage with fontkit, and renders the index. Full TTF files are cached in
+`.cache/fonts` (outside Git; several GB). They are not needed to run the built
+site. Incomplete cache files are downloaded again. To repair specific entries:
 
 ```sh
 CATALOG_REPAIR=1004,1005 pnpm catalog
 ```
 
-Po aktualizacji wersji `google-font-metadata` wykonaj **pełną** przebudowę.
-Manifest wskazuje pliki z hashami zawartości. Generator zapisuje nowe pliki
-przed atomowym zastąpieniem lokalnego manifestu; na hostingu stosuj kolejność
-opisaną w sekcji o cache poniżej. `public/catalog/build-report.json`
-musi mieć pustą listę błędów. Testowe `CATALOG_LIMIT` służy wyłącznie do małych
-lokalnych PoC i zastępuje katalog — nie używaj go w buildzie produkcyjnym.
+After updating `google-font-metadata`, perform a **full** rebuild.
+The manifest points to files with content hashes. The generator writes new files
+before atomically replacing the local manifest; on the host, follow the publishing
+order in the caching section below. `public/catalog/build-report.json` must have
+an empty error list. The `CATALOG_LIMIT` test option is only for small local PoCs
+and replaces the catalog; do not use it in a production build.
 
-## Najważniejsze pliki
+## Key files
 
-- `app/lib/image.ts` — przetwarzanie obrazu i metryki podobieństwa.
-- `app/lib/ranking.ts` — wstępny ranking i względne prawdopodobieństwa.
-- `app/workers/matcher.worker.ts` — cały pipeline wyszukiwania.
-- `app/lib/ocr.ts` — detekcja, OCR i grupowanie słów w linie.
-- `app/components/CropEditor.vue` — edytor ramki z obsługą klawiatury i dotyku.
-- `scripts/build-catalog.ts` — odtwarzalna budowa zasobów statycznych.
+- `app/lib/image.ts` — image processing and similarity metrics.
+- `app/lib/ranking.ts` — initial ranking and relative probabilities.
+- `app/workers/matcher.worker.ts` — the complete search pipeline.
+- `app/lib/ocr.ts` — detection, OCR, and grouping words into lines.
+- `app/components/CropEditor.vue` — crop editor with keyboard and touch support.
+- `scripts/build-catalog.ts` — reproducible static asset generation.
 
-## Licencja i status projektu
+## License and project status
 
-Kod projektu: **MIT**, patrz [LICENSE](LICENSE). Zależności i zasoby zachowują
-swoje licencje; patrz [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-`pnpm licenses:generate` odtwarza pełne informacje dołączane do statycznego builda.
+Project code: **MIT**; see [LICENSE](LICENSE). Dependencies and assets retain their
+own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+`pnpm licenses:generate` rebuilds the full notices included in the static build.
 
-Wersja alpha. Katalog pozostaje snapshotem 1908 rodzin, a nie gwarancją zgodności
-z całym aktualnym Google Fonts. Rozszerzenie kompletności katalogu jest osobnym zadaniem.
+Alpha release. The catalog is a snapshot of 1908 families, not a guarantee of
+coverage of the entire current Google Fonts catalog. Expanding catalog coverage
+is a separate task.
 
-## Cache i publikacja zasobów
+## Caching and publishing assets
 
-Manifest `catalog/catalog.json` ma stały adres i format `version: 2` (wersja formatu,
-nie prefiks całej generacji). Zawiera adres i SHA-256 każdego indeksu litery oraz
-mapy pokrycia Unicode. Hash dotyczy danych **po rozpakowaniu gzip**; działa również,
-gdy CDN rozpakowuje odpowiedź. Przeglądarka i `test:assets` sprawdzają sumy kontrolne.
+The `catalog/catalog.json` manifest has a stable URL and uses `version: 2` (the
+format version, not a prefix for an entire generation). It contains the URL and
+SHA-256 of each character index and the Unicode coverage map. Hashes apply to the
+data **after gzip decompression**, including when a CDN decompresses the response.
+The browser and `test:assets` verify the checksums.
 
-- `catalog/catalog.json`: `Cache-Control: no-cache` i rewalidacja ETag.
-  Wyłącz długi edge TTL dla manifestu; samo `fetch(..., { cache: 'no-cache' })`
-  nie zastępuje prawidłowej konfiguracji CDN.
-- `catalog/glyphs/*.<sha256>.bin.gz` i `catalog/coverage.<sha256>.json.gz`:
+- `catalog/catalog.json`: `Cache-Control: no-cache` and ETag revalidation.
+  Disable long edge TTLs for the manifest; `fetch(..., { cache: 'no-cache' })`
+  alone does not replace correct CDN configuration.
+- `catalog/glyphs/*.<sha256>.bin.gz` and `catalog/coverage.<sha256>.json.gz`:
   `Cache-Control: public, max-age=31536000, immutable`.
-- Wygenerowane pliki `_nuxt/` z hashami: również długi cache immutable.
-- HTML: rewalidacja. Pozostałych plików o stałych nazwach nie oznaczaj immutable.
+- Generated `_nuxt/` files with hashes: also use long-lived immutable caching.
+- HTML: revalidate. Do not mark other files with stable names as immutable.
 
-Na CDN publikuj najpierw nowe pliki danych, potem manifest. Zachowuj stare pliki
-z hashami dla otwartych sesji i rollbacków; generator ich nie usuwa. Hosting, który
-zastępuje całą zawartość katalogu przy deployu (np. Pages), musi otrzymać również
-te starsze pliki. Usuwaj je świadomie według przyjętego okresu retencji.
-Nie cache'uj odpowiedzi 404 dla nowych indeksów.
+On a CDN, publish new data files first, then the manifest. Retain old hashed files
+for open sessions and rollbacks; the generator does not delete them. Hosts that
+replace the entire directory on deployment (such as Pages) must also receive
+these older files. Remove them deliberately according to your retention policy.
+Do not cache 404 responses for new indices.
 
-Identyczne dane zachowują adres. Dodanie fontów może zmienić wszystkie indeksy
-liter — jest to zaakceptowany koszt. Nadal jest jeden plik na znak, bez grup fontów.
-Przeglądarka pobiera tylko indeksy znaków użytych w wyszukiwaniu.
+Identical data keeps the same URL. Adding fonts can change every character index;
+this is an accepted cost. There is still one file per character, without font
+grouping. The browser downloads only indices for characters used in the search.
 
-## CI i testy przeglądarkowe
+## CI and browser tests
 
-GitHub Actions (`.github/workflows/ci.yml`) sprawdza pull requesty i zmiany na `main`:
-instalację z lockfile, testy, typy, integralność zasobów, generowanie licencji,
-statyczny build oraz dopasowanie i oba silniki OCR w Chromium i WebKit.
-Chromium sprawdza dodatkowo edytor, anulowanie oraz zachowanie ręcznej korekty.
-`pnpm test:ocr:dev` dodatkowo sprawdza oba silniki OCR na serwerze Nuxt dev,
-aby wykrywać różnice względem builda statycznego. Workflow nie publikuje aplikacji. Akcje mają pełne SHA z komentarzami wersji;
-Dependabot proponuje ich aktualizacje.
+GitHub Actions (`.github/workflows/ci.yml`) checks pull requests and changes to
+`main`: installation from the lockfile, tests, types, asset integrity, license
+generation, the static build, matching, and both OCR engines in Chromium and WebKit.
+Chromium additionally checks the editor, cancellation, and preservation of manual
+corrections. `pnpm test:ocr:dev` also checks both OCR engines on the Nuxt development
+server to catch differences from the static build. The workflow does not deploy
+the app. Actions are pinned to full SHAs with version comments; Dependabot proposes
+updates.
 
-Odtworzenie automatycznego testu bez ręcznego uruchamiania serwera:
+To reproduce the automated tests without starting a server manually:
 
 ```sh
 pnpm exec playwright install chromium webkit
@@ -288,12 +296,13 @@ BROWSER=chromium REPORT_DIR=.cache/browser-reports pnpm test:e2e
 BROWSER=webkit REPORT_DIR=.cache/browser-reports pnpm test:e2e
 ```
 
-Każdy silnik OCR ma limit 120 sekund obejmujący inicjalizację i rozpoznawanie.
-Po błędzie lub przekroczeniu limitu jego worker jest zatrzymywany, a kolejna próba
-uruchamia nowy. Tryb automatyczny może następnie użyć Tesseract z osobnym limitem.
-Zmiana obrazu anuluje poprzednią kolejkę. W repozytorium jest mały patch Tesseract,
-który umożliwia zatrzymanie workera także podczas inicjalizacji; pnpm nakłada go
-automatycznie. Nie usuwaj patcha bez sprawdzenia testów OCR.
+Each OCR engine has a 120-second timeout covering initialization and recognition.
+After an error or timeout, its worker is terminated and the next attempt starts
+a new one. Automatic mode may then use Tesseract with a separate timeout.
+Changing the image cancels the previous queue. The repository includes a small
+Tesseract patch that allows its worker to be terminated during initialization;
+pnpm applies it automatically. Do not remove the patch without checking the OCR
+tests.
 
 Google Fonts: https://github.com/google/fonts
 PaddleOCR: https://github.com/PaddlePaddle/PaddleOCR
