@@ -957,6 +957,68 @@ input[type='checkbox'] {
   font-size: 13px;
   color: var(--muted);
 }
+.editable-specimen {
+  position: relative;
+  padding-right: 36px;
+}
+.specimen-input {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: normal;
+  line-height: inherit;
+  resize: none;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+.specimen-input:focus {
+  border: 0;
+  box-shadow: none;
+}
+.specimen-input:focus-visible {
+  outline: 1px dashed #9eba76;
+  outline-offset: 5px;
+}
+.specimen-input.font-pending {
+  color: transparent;
+  caret-color: var(--ink);
+}
+.specimen-status {
+  position: absolute;
+  left: 0;
+  right: 36px;
+  font:
+    13px 'DM Sans',
+    sans-serif;
+  color: var(--muted);
+  pointer-events: none;
+}
+.preview-reset {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.preview-reset:hover {
+  background: #e5edda;
+  color: var(--ink);
+}
 .result-actions {
   display: flex;
   align-items: center;

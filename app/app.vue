@@ -97,6 +97,7 @@ const canSearch = computed(
     !imageBusy.value,
 )
 const resultsText = ref('')
+const previewText = ref('')
 watch(error, async (message) => {
   if (!message) return
   await nextTick()
@@ -354,6 +355,7 @@ async function search() {
   stale.value = false
   results.value = []
   resultsText.value = currentText.value
+  previewText.value = resultsText.value
   if (typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') {
     error.value =
       'Font recognition requires a browser with OffscreenCanvas support. Open this page in an up-to-date version of Chrome, Edge, Firefox or Safari.'
@@ -854,7 +856,8 @@ onBeforeUnmount(() => {
               :key="r.font.id"
               :result="r"
               :index="i"
-              :text="resultsText"
+              v-model:text="previewText"
+              :original-text="resultsText"
             />
             <ResultSkeleton
               v-for="slot in busy ? Math.max(0, 8 - results.length) : 0"

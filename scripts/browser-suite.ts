@@ -37,6 +37,7 @@ try {
         'auto-rotation-check',
         'ux-check',
         'loading-check',
+        'preview-check',
       ]
   if (!devOCR && process.env.BROWSER !== 'webkit')
     scripts.push('interactions-check', 'ocr-recovery-check')

@@ -84,6 +84,11 @@ Podstawowa ścieżka to dodanie obrazu, sprawdzenie ramki i tekstu, następnie
 „Find matching fonts”. Po rozpoczęciu analizy widok przechodzi do postępu i
 wyników; „Edit selection” pozwala wrócić do edycji.
 
+Tekst podglądu można edytować bezpośrednio w dowolnej karcie. Zmiana jest wspólna
+dla wszystkich kart i nie zmienia tekstu wyszukiwania ani rankingu. Po edycji przy
+każdym podglądzie pojawia się ikona resetu, która przywraca tekst we wszystkich
+kartach. Nowe wyszukiwanie zaczyna podglądy od tekstu użytego do wyszukiwania.
+
 „Adjust image” zawiera obrót i pomoc dotyczącą zaznaczenia. „Advanced options”
 zawiera głębsze wyszukiwanie, wybór silnika OCR, oddzielenie tła, próg kontrastu
 i podgląd maski. Panele są domyślnie zamknięte; ich zamknięcie zachowuje ustawienia.
