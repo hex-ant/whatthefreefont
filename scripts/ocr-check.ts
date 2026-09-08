@@ -22,6 +22,7 @@ page.on('requestfailed', (r) =>
 )
 await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/')
 await page.getByRole('button', { name: /Serifs and spacing/ }).click()
+await page.locator('.advanced > summary').click()
 const results = []
 for (const engine of ['paddle', 'tesseract']) {
   await page.getByRole('combobox', { name: 'OCR engine' }).selectOption(engine)

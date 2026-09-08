@@ -26,6 +26,7 @@ try {
       })
       await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/')
       await page.getByRole('button', { name: /Serifs and spacing/ }).click()
+      await page.locator('.advanced > summary').click()
       await page.getByRole('combobox', { name: 'OCR engine' }).selectOption(engine)
       await page.locator('#transcription').fill('')
       await page.getByRole('button', { name: 'Read selection' }).click()

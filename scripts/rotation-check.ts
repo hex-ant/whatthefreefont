@@ -24,6 +24,7 @@ try {
   await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/')
   await page.locator('input[type=file]').setInputFiles(fixturePath)
   const angle = page.getByRole('spinbutton', { name: 'Rotation in degrees' })
+  await page.locator('.image-options > summary').click()
   await angle.fill('-53')
   const bounds = await page.locator('.crop-svg').evaluate((svg) => {
     const root = svg as unknown as SVGSVGElement
@@ -80,7 +81,7 @@ try {
     'OCR must receive the rotated crop',
   )
   await page.getByRole('button', { name: 'Find matching fonts' }).click()
-  await page.locator('.comparison-count').waitFor({ timeout: 300000 })
+  await page.locator('.comparison-count').waitFor({ state: 'attached', timeout: 300000 })
   assert.equal(
     await page.locator('.result-heading h3').first().textContent(),
     'Playfair Display',

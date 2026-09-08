@@ -57,7 +57,9 @@ async function copy() {
           {{ result.font.style === 'italic' ? 'Italic' : 'Regular' }}</span
         >
       </div>
-      <span class="probability">{{ (result.probability * 100).toFixed(1) }}<small>%</small></span>
+      <span class="probability" title="Relative likelihood among these suggestions"
+        >{{ (result.probability * 100).toFixed(1) }}<small>%</small></span
+      >
     </div>
     <div
       class="font-specimen"

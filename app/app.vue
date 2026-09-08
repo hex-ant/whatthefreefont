@@ -11,6 +11,20 @@ const fileInput = ref<HTMLInputElement>(),
   fileName = ref(''),
   image = shallowRef<HTMLImageElement>()
 const cropEditor = ref<{ draw: () => void }>()
+const imageOptions = ref(false),
+  advancedOptions = ref(false)
+const editorHeading = ref<HTMLElement>(),
+  resultsHeading = ref<HTMLElement>(),
+  errorNotice = ref<HTMLElement>()
+function reveal(element?: HTMLElement) {
+  if (!element) return
+  element.focus({ preventScroll: true })
+  element.scrollIntoView({
+    block: 'start',
+    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+  })
+}
+
 const rect = ref<Rect>({ x: 0, y: 0, width: 1, height: 1 }),
   detections = ref<Recognition[]>([]),
   text = ref('')
@@ -83,6 +97,11 @@ const canSearch = computed(
     !imageBusy.value,
 )
 const resultsText = ref('')
+watch(error, async (message) => {
+  if (!message) return
+  await nextTick()
+  reveal(errorNotice.value)
+})
 
 function stopSearch() {
   interrupted.value = true
@@ -141,6 +160,9 @@ async function loadFile(file: File) {
 }
 async function loadSource(url: string, name: string, sampleText?: string) {
   const id = ++uploadId
+  interrupted.value = false
+  imageOptions.value = false
+  advancedOptions.value = false
   resetOCR()
   ++ocrId
   cancel()
@@ -199,8 +221,11 @@ async function loadSource(url: string, name: string, sampleText?: string) {
     threshold.value = 0
     imageBusy.value = false
     updatePreview()
+    await nextTick()
+    if (id !== uploadId) return
+    reveal(editorHeading.value)
     if (sampleText) {
-      ocrStatus.value = 'The sample text is already filled in. You can edit it.'
+      ocrStatus.value = 'Sample text filled in. Ready to search.'
     } else void runOCR(false)
   } catch (e) {
     if (id === uploadId) error.value = e instanceof Error ? e.message : 'Could not read the image.'
@@ -375,6 +400,8 @@ async function search() {
       },
       [rgba.buffer],
     )
+    await nextTick()
+    reveal(resultsHeading.value)
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Could not start the search.'
     cancel()
@@ -457,6 +484,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="app-shell"
+    :class="{ 'has-image': source }"
     @dragover.prevent="dragging = true"
     @dragleave.self="dragging = false"
     @drop.prevent="drop"
@@ -468,23 +496,29 @@ onBeforeUnmount(() => {
         ><span class="brand-dot" aria-hidden="true">.</span>
       </a>
       <div class="topbar-right">
-        <button class="text-button" @click="help = !help">How does it work?</button>
+        <button
+          class="text-button"
+          :aria-expanded="help"
+          aria-controls="help-panel"
+          @click="help = !help"
+        >
+          How does it work?
+        </button>
         <div class="privacy"><span class="status-dot" /> Your image stays on your device</div>
       </div>
     </header>
     <main>
-      <div class="intro">
+      <div v-if="!source" class="intro">
         <div>
           <p class="eyebrow">GOOGLE FONTS · IMAGE SEARCH</p>
           <h1>What <em>font</em> is this?</h1>
-          <p>Add an image. Select the text. Find a free font.</p>
-        </div>
-        <div class="catalog-count">
-          <strong>{{ catalog?.families?.toLocaleString('en-US') || '…' }}</strong
-          ><span>Google Fonts families<br />to compare</span>
+          <p>
+            Find matching Google Fonts from an image.<br />Free to use. Your images stay on your
+            device.
+          </p>
         </div>
       </div>
-      <div v-if="help" class="help-panel">
+      <div v-if="help" id="help-panel" class="help-panel">
         <strong>From an image to a free font</strong>
         <p>
           Select a single line in one font. OCR fills in the text for you — correct any mistakes,
@@ -509,7 +543,7 @@ onBeforeUnmount(() => {
         aria-label="Choose an image"
         @change="onFile"
       />
-      <div v-if="error" class="message error" role="alert">
+      <div v-if="error" ref="errorNotice" class="message error" role="alert" tabindex="-1">
         {{ error
         }}<button class="text-button" @click="error = ''" aria-label="Dismiss message">×</button>
       </div>
@@ -536,14 +570,38 @@ onBeforeUnmount(() => {
             >
           </button>
         </div>
+        <p class="catalog-note">
+          <span class="status-dot" />
+          {{
+            catalog
+              ? `${catalog.families.toLocaleString('en-US')} Google Fonts families`
+              : 'Google Fonts only'
+          }}
+          · No account needed
+        </p>
       </template>
       <template v-else>
+        <nav class="journey" aria-label="Font identification steps">
+          <span class="journey-done"><span>✓</span> Image</span><i aria-hidden="true">/</i>
+          <span :aria-current="!busy && !results.length ? 'step' : undefined"
+            ><span>2</span> Check text</span
+          ><i aria-hidden="true">/</i>
+          <button
+            v-if="busy || results.length || interrupted"
+            class="text-button"
+            :aria-current="!stale ? 'step' : undefined"
+            @click="reveal(resultsHeading)"
+          >
+            <span>3</span> Matches
+          </button>
+          <span v-else class="journey-next"><span>3</span> Matches</span>
+        </nav>
         <div class="workspace">
           <section class="editor-panel">
             <div class="panel-heading">
               <div>
                 <span class="step">01</span>
-                <h2>Select the text</h2>
+                <h2 ref="editorHeading" tabindex="-1">Select one line of text</h2>
               </div>
               <button class="text-button" :disabled="imageBusy" @click="fileInput?.click()">
                 Change image ↗
@@ -563,50 +621,70 @@ onBeforeUnmount(() => {
               :detections="detections"
               @select="selectDetection"
             />
-            <div class="editor-toolbar">
-              <span class="filename" :title="fileName">{{ fileName }}</span
-              ><button class="text-button" @click="cropEditor?.draw()">New selection</button
-              ><button class="text-button" @click="fullImage">Full image</button
-              ><button class="text-button" @click="straighten">Straighten ↻</button>
-              <button v-if="angle !== 0" class="text-button" @click="resetRotation">
-                Reset rotation
-              </button>
-            </div>
-            <div class="rotation-control">
-              <label for="angle">Rotation</label
-              ><input
-                id="angle"
-                v-model.number="manualAngle"
-                type="range"
-                min="-180"
-                max="180"
-                step=".1"
-              /><input
-                v-model.number="manualAngle"
-                class="angle-number"
-                type="number"
-                min="-180"
-                max="180"
-                step=".1"
-                aria-label="Rotation in degrees"
-              /><span>°</span
-              ><button
-                class="text-button"
-                aria-label="Rotate image by 180 degrees"
-                @click="flipImage"
-              >
-                180°
-              </button>
-            </div>
-            <p v-if="autoApplied" class="rotation-note" role="status">
-              Image straightened automatically. You can adjust or reset the rotation.
-            </p>
             <div v-if="detections.length > 1" class="detected-lines">
-              <span>Detected text:</span
-              ><button v-for="(d, i) in detections" :key="i" @click="selectDetection(d)">
+              <span>Choose a detected line:</span>
+              <button v-for="(d, i) in detections" :key="i" @click="selectDetection(d)">
                 {{ d.text }}
               </button>
             </div>
+            <div class="editor-toolbar">
+              <button class="text-button" @click="cropEditor?.draw()">New selection</button>
+              <div v-if="angle !== 0" class="rotation-summary">
+                <span v-if="autoApplied" class="rotation-note" role="status"
+                  >Auto-straightened</span
+                >
+                <span v-else class="rotation-value">{{ angle }}°</span>
+                <button class="text-button" @click="resetRotation">Reset rotation</button>
+              </div>
+            </div>
+            <details
+              class="image-options disclosure"
+              :open="imageOptions"
+              @toggle="imageOptions = ($event.target as HTMLDetailsElement).open"
+            >
+              <summary>Adjust image <span aria-hidden="true">+</span></summary>
+              <div class="image-options-body">
+                <div class="rotation-control">
+                  <label for="angle">Rotation</label>
+                  <input
+                    id="angle"
+                    v-model.number="manualAngle"
+                    type="range"
+                    min="-180"
+                    max="180"
+                    step=".1"
+                  />
+                  <input
+                    v-model.number="manualAngle"
+                    class="angle-number"
+                    type="number"
+                    min="-180"
+                    max="180"
+                    step=".1"
+                    aria-label="Rotation in degrees"
+                  /><span>°</span>
+                </div>
+                <div class="image-actions">
+                  <button class="text-button" @click="straighten">Straighten ↻</button>
+                  <button
+                    class="text-button"
+                    aria-label="Rotate image by 180 degrees"
+                    @click="flipImage"
+                  >
+                    Rotate 180°
+                  </button>
+                  <button class="text-button" @click="fullImage">Full image</button>
+                </div>
+                <p class="selection-tip">
+                  The selection can extend beyond the image. Use arrow keys to move it, Alt + arrows
+                  to resize, and Shift for larger steps.
+                </p>
+                <div class="image-facts">
+                  <span class="filename" :title="fileName">{{ fileName }}</span
+                  ><span>{{ Math.round(rect.width) }} × {{ Math.round(rect.height) }} px</span>
+                </div>
+              </div>
+            </details>
           </section>
           <section class="settings-panel">
             <div class="panel-heading">
@@ -614,90 +692,132 @@ onBeforeUnmount(() => {
                 <span class="step">02</span>
                 <h2>Check the text</h2>
               </div>
-              <span class="small-tag">OCR + YOU</span>
             </div>
-            <label class="field-label" for="transcription">Text in the selection</label
-            ><textarea
+            <div class="transcription-label">
+              <label class="field-label" for="transcription">Does this match the image?</label>
+              <button class="text-button read-selection" :disabled="ocrBusy" @click="runOCR(true)">
+                <span :class="{ spinner: ocrBusy }">{{ ocrBusy ? '' : '↻' }}</span
+                >{{ ocrBusy ? 'Reading…' : 'Read selection' }}
+              </button>
+            </div>
+            <textarea
               id="transcription"
               v-model="text"
-              rows="2"
+              rows="1"
               maxlength="80"
-              placeholder="Type exactly what you see…"
+              placeholder="Type the text from your image…"
               spellcheck="false"
             />
-            <p class="field-hint">
-              Keep capitalization and special characters. One line is enough.
-            </p>
-            <div class="ocr-row">
-              <button class="text-button" :disabled="ocrBusy" @click="runOCR(true)">
-                <span :class="{ spinner: ocrBusy }">{{ ocrBusy ? '' : '↻' }}</span>
-                {{ ocrBusy ? 'Reading…' : 'Read selection' }}</button
-              ><select v-model="ocrEngine" aria-label="OCR engine">
-                <option value="auto">OCR: auto</option>
-                <option value="paddle">PaddleOCR</option>
-                <option value="tesseract">Tesseract</option>
-              </select>
-            </div>
+            <p class="field-hint">Correct any letters or spaces. Keep the same capitalization.</p>
             <p
-              v-if="ocrStatus || ocrError"
+              v-if="ocrStatus || ocrError || ocrBusy"
               class="ocr-status"
               :class="{ warning: ocrError }"
               role="status"
             >
-              {{ ocrError || ocrStatus }}
+              {{ ocrError || ocrStatus || 'Reading text from your image…' }}
             </p>
-            <div class="preview-heading">
-              <span class="field-label">Shapes used for matching</span
-              ><span class="preview-tag">COLOR AND BACKGROUND REMOVED</span>
+            <div class="search-action">
+              <button
+                v-if="!busy"
+                class="primary search-button"
+                :disabled="!canSearch"
+                @click="search"
+              >
+                Find matching fonts <span>→</span>
+              </button>
+              <button v-else class="text-button view-progress" @click="reveal(resultsHeading)">
+                <i class="spinner" /> View search progress ↓
+              </button>
+              <p v-if="!currentText" class="empty-text-hint">
+                {{
+                  ocrBusy
+                    ? 'Wait for the text, or type it yourself above.'
+                    : 'Enter the text above to start your search.'
+                }}
+              </p>
+              <span class="local-note">Google Fonts only · Free, private, no sign-up</span>
             </div>
-            <div class="normalized-preview">
-              <img
-                v-if="normalized"
-                :src="normalized"
-                alt="Isolated text shapes used for matching"
-              />
-            </div>
-            <details class="advanced">
-              <summary>Matching settings <span>+</span></summary>
+            <details
+              class="advanced disclosure"
+              :open="advancedOptions"
+              @toggle="advancedOptions = ($event.target as HTMLDetailsElement).open"
+            >
+              <summary>Advanced options <span aria-hidden="true">+</span></summary>
               <div class="advanced-fields">
+                <p class="advanced-intro">
+                  Usually, automatic settings are enough. Try these if text is hard to read or
+                  matches look wrong.
+                </p>
                 <label
                   ><input v-model="thorough" type="checkbox" /> Thorough search (more fonts)</label
-                ><label for="polarity"
+                >
+                <label for="ocr-engine"
+                  >Text recognition<select
+                    id="ocr-engine"
+                    v-model="ocrEngine"
+                    aria-label="OCR engine"
+                  >
+                    <option value="auto">Automatic (recommended)</option>
+                    <option value="paddle">PaddleOCR</option>
+                    <option value="tesseract">Tesseract</option>
+                  </select></label
+                >
+                <p class="setting-hint">After changing the engine, use “Read selection” above.</p>
+                <label for="polarity"
                   >Text and background<select id="polarity" v-model="mode">
                     <option value="auto">Automatic, based on color</option>
                     <option value="dark">Dark text</option>
                     <option value="light">Light text</option>
                   </select></label
-                ><label for="threshold"
+                >
+                <label for="threshold"
                   >Contrast threshold <span>{{ threshold }}</span
                   ><input id="threshold" v-model.number="threshold" type="range" min="-80" max="80"
                 /></label>
+                <div class="preview-heading">
+                  <span class="field-label">Shapes used for matching</span>
+                </div>
+                <div class="normalized-preview">
+                  <img
+                    v-if="normalized"
+                    :src="normalized"
+                    alt="Isolated text shapes used for matching"
+                  />
+                </div>
+                <p class="setting-hint">
+                  The letters should be clear, with as little background noise as possible.
+                </p>
               </div>
             </details>
-            <button
-              v-if="!busy"
-              class="primary search-button"
-              :disabled="!canSearch"
-              @click="search"
-            >
-              Find matching fonts <span>→</span></button
-            ><button v-else class="cancel-button" @click="stopSearch">
-              Stop search <span>×</span>
-            </button>
-            <span class="local-note"
-              ><span class="status-dot" /> Runs on your device · Google Fonts only</span
-            >
           </section>
         </div>
-        <section v-if="busy || results.length" class="results-section" aria-label="Search results">
+        <section
+          v-if="busy || results.length || interrupted"
+          class="results-section"
+          aria-label="Search results"
+          :data-status="busy ? 'searching' : 'complete'"
+        >
           <div class="results-title">
             <div>
               <p class="eyebrow">CLOSEST MATCHES</p>
-              <h2>{{ busy ? 'Finding your font…' : 'A few good matches.' }}</h2>
+              <h2 ref="resultsHeading" tabindex="-1">
+                {{
+                  busy
+                    ? 'Finding your font…'
+                    : interrupted && !results.length
+                      ? 'Search stopped'
+                      : 'Your closest matches'
+                }}
+              </h2>
+              <p class="results-transcription">For “{{ resultsText }}”</p>
             </div>
-            <span v-if="info" class="comparison-count"
-              >Compared {{ info.compared }} font variants</span
-            >
+            <div class="results-controls">
+              <button class="text-button" @click="reveal(editorHeading)">Edit selection ↑</button>
+              <button v-if="busy" class="cancel-button" @click="stopSearch">
+                Stop search <span>×</span>
+              </button>
+            </div>
           </div>
           <div v-if="busy" class="progress-panel" role="status">
             <div>
@@ -721,8 +841,12 @@ onBeforeUnmount(() => {
             Could not download {{ info.failed }} font variants. Results are incomplete; try again
             with a better connection.
           </p>
-          <p v-if="interrupted && results.length" class="message warning">
-            Search stopped. Partial results are shown below.
+          <p v-if="interrupted" class="message warning">
+            {{
+              results.length
+                ? 'Search stopped. Partial results are shown below.'
+                : 'Search stopped before any matches were found. You can edit the selection or search again.'
+            }}
           </p>
           <div class="results-grid" :class="{ stale }">
             <ResultCard
@@ -733,10 +857,15 @@ onBeforeUnmount(() => {
               :text="resultsText"
             />
           </div>
-          <p v-if="results.length" class="probability-note">
-            Percentages show relative likelihood among these {{ results.length }} suggestions. They
-            estimate similarity, not certainty of identification.
-          </p>
+          <details v-if="results.length" class="results-explainer disclosure">
+            <summary>About these results <span aria-hidden="true">+</span></summary>
+            <p class="probability-note">
+              Percentages show relative likelihood among these {{ results.length }} suggestions.
+              They estimate similarity, not certainty of identification. The font may be outside
+              Google Fonts.
+            </p>
+            <p v-if="info" class="comparison-count">Compared {{ info.compared }} font variants</p>
+          </details>
         </section>
       </template>
       <footer>

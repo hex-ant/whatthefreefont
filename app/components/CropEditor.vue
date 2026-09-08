@@ -189,10 +189,8 @@ const corners = computed(() => {
     <div class="canvas-caption">
       <span
         ><span class="status-dot" />
-        {{
-          drawing ? 'Drag to draw a new selection' : 'The selection can extend beyond the image'
-        }}</span
-      ><span>{{ Math.round(modelValue.width) }} × {{ Math.round(modelValue.height) }} px</span>
+        {{ drawing ? 'Drag to draw a new selection' : 'Drag a box around one line of text' }}</span
+      >
     </div>
   </div>
 </template>

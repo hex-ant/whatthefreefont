@@ -78,6 +78,21 @@ Reset i ręczna korekta są zachowywane — OCR ani wyszukiwanie nie prostują o
 Ręczna zmiana kąta utrzymuje środek ramki na tym samym fragmencie obrazu, o ile pozwala
 na to dostępna przestrzeń. „Full image” obejmuje granice obróconego obrazu.
 
+## Układ interfejsu
+
+Podstawowa ścieżka to dodanie obrazu, sprawdzenie ramki i tekstu, następnie
+„Find matching fonts”. Po rozpoczęciu analizy widok przechodzi do postępu i
+wyników; „Edit selection” pozwala wrócić do edycji.
+
+„Adjust image” zawiera obrót i pomoc dotyczącą zaznaczenia. „Advanced options”
+zawiera głębsze wyszukiwanie, wybór silnika OCR, oddzielenie tła, próg kontrastu
+i podgląd maski. Panele są domyślnie zamknięte; ich zamknięcie zachowuje ustawienia.
+„Reset rotation” pozostaje widoczne poza panelami przy każdym niezerowym obrocie.
+Wyjaśnienie procentów i liczba porównanych odmian są pod „About these results”.
+
+Uzasadnienie hierarchii, scenariusze i pomiary:
+[raport UX](docs/ux/review-2026-09-08.md).
+
 ## Architektura
 
 ```text
@@ -167,6 +182,11 @@ pnpm exec tsx scripts/ocr-check.ts
 pnpm exec tsx scripts/heldout-check.ts
 pnpm test:interactions
 ```
+
+`pnpm test:e2e` uruchamia serwer statyczny i zestaw testów przeglądarkowych,
+w tym `scripts/ux-check.ts`: główną ścieżkę, rozwijanie opcji klawiaturą,
+zachowanie parametrów, widoczność resetu i układ przy 320–1440 px.
+Wymaga wcześniejszego `pnpm build` i zainstalowanego silnika Playwright.
 
 Testy UI i OCR można uruchomić także z `BROWSER=webkit` po zainstalowaniu
 silnika przez `pnpm exec playwright install webkit`.

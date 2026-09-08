@@ -46,6 +46,7 @@ await page.keyboard.press('ArrowRight')
 assert.equal(Number(await rect.getAttribute('x')), before.x + 1)
 await page.keyboard.press('Alt+ArrowRight')
 assert.equal(Number(await rect.getAttribute('width')), before.width + 1)
+await page.locator('.image-options > summary').click()
 await page.getByRole('button', { name: 'Full image' }).click()
 const toolResult = await page.evaluate(async () => {
   const tool = (window as any).__fontTools.configure_font_search

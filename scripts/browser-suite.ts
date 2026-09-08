@@ -30,7 +30,7 @@ try {
   if (!ready) throw new Error('Static server did not start')
   const scripts = devOCR
     ? ['ocr-check']
-    : ['browser-check', 'ocr-check', 'rotation-check', 'auto-rotation-check']
+    : ['browser-check', 'ocr-check', 'rotation-check', 'auto-rotation-check', 'ux-check']
   if (!devOCR && process.env.BROWSER !== 'webkit')
     scripts.push('interactions-check', 'ocr-recovery-check')
   for (const script of scripts) {
