@@ -856,6 +856,10 @@ onBeforeUnmount(() => {
               :index="i"
               :text="resultsText"
             />
+            <ResultSkeleton
+              v-for="slot in busy ? Math.max(0, 8 - results.length) : 0"
+              :key="`loading-${slot}`"
+            />
           </div>
           <details v-if="results.length" class="results-explainer disclosure">
             <summary>About these results <span aria-hidden="true">+</span></summary>

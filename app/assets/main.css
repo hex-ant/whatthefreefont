@@ -842,6 +842,54 @@ input[type='checkbox'] {
   border-color: #9eba76;
   background: #fbfff5;
 }
+.skeleton-block {
+  display: block;
+  border-radius: 5px;
+  background: #e9eee3;
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+}
+.result-skeleton .result-heading {
+  min-height: 40px;
+}
+.skeleton-rank {
+  width: 16px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.skeleton-identity {
+  flex: 1;
+  min-width: 0;
+}
+.skeleton-name {
+  width: 80%;
+  max-width: 180px;
+  height: 18px;
+}
+.skeleton-meta {
+  width: 60px;
+  height: 10px;
+  margin-top: 8px;
+}
+.skeleton-score {
+  width: 48px;
+  height: 24px;
+}
+.skeleton-sample {
+  width: 88%;
+  height: 38px;
+}
+.result-skeleton .result-actions {
+  min-height: 61px;
+}
+.skeleton-link {
+  width: 80px;
+  height: 16px;
+}
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
 .result-heading {
   display: flex;
   align-items: center;
@@ -991,7 +1039,8 @@ input[type='checkbox'] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .spinner {
+  .spinner,
+  .skeleton-block {
     animation: none;
   }
 }

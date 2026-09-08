@@ -91,6 +91,12 @@ try {
       assert(
         (await page.locator('.result-heading h3').allTextContents()).includes('Playfair Display'),
       )
+      assert.equal(await page.locator('.result-skeleton').count(), 0)
+      const firstResult = await page.locator('.result-card').first().boundingBox()
+      assert(
+        firstResult && firstResult.y >= 0 && firstResult.y + firstResult.height <= 900,
+        'Completed results should be visible without another scroll',
+      )
       await page.screenshot({ path: `${reportDir}/ux/results.png`, fullPage: true })
       await page.getByRole('button', { name: 'Edit selection' }).click()
       await page.waitForFunction(
