@@ -29,6 +29,26 @@ o licencjach w `licenses/` przed wygenerowaniem strony.
 Dla hostingu w podkatalogu ustaw `NUXT_APP_BASE_URL=/nazwa/` podczas budowania.
 Wymagane jest HTTP(S), nie otwieranie pliku `index.html` przez `file://`.
 
+## SEO i podglądy linków
+
+Strona startowa jest prerenderowana podczas builda: treść, canonical, Open Graph,
+Twitter Card i JSON-LD są dostępne w HTML bez JavaScriptu. OCR i dopasowanie nadal
+wykonują się wyłącznie w przeglądarce. Hosting otrzymuje wyłącznie pliki statyczne.
+
+Domyślny adres publiczny to `https://whatthefreefont.com/`. Dla innej domeny ustaw
+`SITE_URL` podczas budowania, np. `SITE_URL=https://example.com/ pnpm build`.
+Dla podkatalogu ustaw obie wartości: `SITE_URL=https://example.com/fonts/`
+i `NUXT_APP_BASE_URL=/fonts/`. Nie ustawiaj `SITE_URL` na adres lokalny ani tymczasowy
+adres podglądu, gdy przygotowujesz produkcję.
+
+Build generuje `robots.txt` i `sitemap.xml` oraz oznacza dokumenty zapasowe
+`200.html` i `404.html` jako `noindex`. Na końcu uruchamia `pnpm test:seo`, który
+sprawdza rzeczywisty HTML i pliki wynikowe. Dane aplikacji nie zawierają fikcyjnych
+ocen ani recenzji. Konfiguracja jest w `config/site.ts`.
+
+Grafika udostępniania to `public/og-image.png` (1200 × 630). Instrukcja jej
+odtwarzania: [docs/social/README.md](docs/social/README.md).
+
 ## Funkcje
 
 - Upload, drag & drop, wklejanie obrazu ze schowka; przykłady gotowe do sprawdzenia.

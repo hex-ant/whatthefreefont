@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.17.1",
   "scripts": {
     "dev": "nuxt dev --host 127.0.0.1",
-    "build": "pnpm test:assets && pnpm licenses:generate && nuxt generate",
+    "build": "pnpm test:assets && pnpm licenses:generate && nuxt generate && tsx scripts/build-seo.ts && tsx scripts/check-seo.ts",
     "preview": "serve .output/public --listen 4173",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
@@ -20,7 +20,9 @@
     "test:assets": "tsx scripts/verify-assets.ts",
     "licenses:generate": "tsx scripts/build-notices.ts",
     "test:e2e": "tsx scripts/browser-suite.ts",
-    "test:ocr:dev": "tsx scripts/browser-suite.ts --dev-ocr"
+    "test:ocr:dev": "tsx scripts/browser-suite.ts --dev-ocr",
+    "social:generate": "tsx scripts/build-social-image.ts",
+    "test:seo": "tsx scripts/check-seo.ts"
   },
   "dependencies": {
     "@paddleocr/paddleocr-js": "0.4.2",
