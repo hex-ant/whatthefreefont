@@ -60,18 +60,23 @@ watch([() => props.text, ready], async () => {
   resizeInput()
 })
 let observer: ResizeObserver | undefined
+let resizeFrame = 0
 onMounted(() => {
   resizeInput()
   let previousWidth = 0
   observer = new ResizeObserver(([entry]) => {
     if (entry && entry.contentRect.width !== previousWidth) {
       previousWidth = entry.contentRect.width
-      resizeInput()
+      cancelAnimationFrame(resizeFrame)
+      resizeFrame = requestAnimationFrame(resizeInput)
     }
   })
   if (input.value) observer.observe(input.value)
 })
-onBeforeUnmount(() => observer?.disconnect())
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  cancelAnimationFrame(resizeFrame)
+})
 async function resetPreview() {
   emit('update:text', props.originalText)
   await nextTick()
