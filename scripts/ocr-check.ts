@@ -20,7 +20,7 @@ page.on('console', (m) => {
 page.on('requestfailed', (r) =>
   console.log('FAILED', r.url().slice(0, 200), r.failure()?.errorText),
 )
-await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/')
+await page.goto(process.env.BASE_URL || 'http://127.0.0.1:4173/', { waitUntil: 'networkidle' })
 await page.getByRole('button', { name: /Serifs and spacing/ }).click()
 await page.locator('.advanced > summary').click()
 const results = []
