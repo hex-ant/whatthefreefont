@@ -6,6 +6,13 @@
     ],
     "note": "License declared in package metadata; standard SPDX terms supplied because upstream has no standalone license notice."
   },
+  "napi-lzma": {
+    "source": "https://github.com/Brooooooklyn/lzma/blob/main/package.json",
+    "packages": [
+      "@napi-rs/lzma-*"
+    ],
+    "note": "License declared in package metadata; standard SPDX terms supplied because upstream has no standalone license notice."
+  },
   "esbuild": {
     "source": "https://raw.githubusercontent.com/evanw/esbuild/v0.28.2/LICENSE.md",
     "packages": [
