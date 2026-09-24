@@ -876,7 +876,23 @@ onBeforeUnmount(() => {
         </section>
       </template>
       <footer>
-        <span>Free fonts. Free discovery.</span><span>NO ACCOUNT · NO IMAGE UPLOADS</span>
+        <div class="footer-primary">
+          <span>Free fonts. Free discovery.</span><span>NO ACCOUNT · NO IMAGE UPLOADS</span>
+        </div>
+        <div class="footer-credits">
+          <a
+            href="https://github.com/hex-ant/whatthefreefont"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open source on GitHub
+          </a>
+          <span>
+            Made with <span class="footer-heart" role="img" aria-label="love">♥</span> by
+            <a href="https://arturrosa.pl" target="_blank" rel="noopener noreferrer">Artur Rosa</a>
+            © 2026
+          </span>
+        </div>
       </footer>
     </main>
   </div>
